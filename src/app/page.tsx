@@ -1953,6 +1953,47 @@ function Row({ label, value, last }: any) {
 /*  Приложение                                                         */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/*  Shell                                                              */
+/* ------------------------------------------------------------------ */
+
+function Shell({ children }: any) {
+  return (
+    <div
+      style={{
+        background: `radial-gradient(120% 80% at 50% 0%, #221E19 0%, ${C.bg} 45%, ${C.bgDeep} 100%)`,
+        minHeight: "100vh",
+        color: C.text,
+        WebkitFontSmoothing: "antialiased",
+      }}
+    >
+      <style>{`
+        .tap:active { transform: scale(0.985); }
+        .tap:focus-visible { outline: 2px solid #EDE8DF; outline-offset: 3px; }
+        button { -webkit-tap-highlight-color: transparent; }
+        input::placeholder { color: #6E675E; }
+        input:focus { border-color: rgba(255,255,255,0.28) !important; }
+        @media (prefers-reduced-motion: reduce) {
+          * { transition: none !important; animation: none !important; }
+        }
+      `}</style>
+      <div
+        style={{
+          maxWidth: 560,
+          margin: "0 auto",
+          padding: "0 20px 0",
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const { ready, user, state, saveProfile, saveChapter, signOut } = useAuth();
   const [screen, setScreen] = useState("intro");
