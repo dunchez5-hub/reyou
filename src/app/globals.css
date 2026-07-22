@@ -1,0 +1,35 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: #191714;
+  color: #ede8df;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  min-height: 100dvh;
+}
+
+input, button {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input::placeholder {
+  color: #6e675e;
+}
+
+input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+}
