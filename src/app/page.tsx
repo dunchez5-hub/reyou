@@ -337,7 +337,7 @@ const LINKS = {
 /*  Скоринг                                                            */
 /* ------------------------------------------------------------------ */
 
-function computeResult(answers) {
+function computeResult(answers: Record<string, unknown>) {
   const raw = { L: 0, S: 0, M: 0, O: 0 };
   let sumW = 0;
 
@@ -407,7 +407,7 @@ function levelOf(v) {
 /*  Полоса материала — подпись главы                                   */
 /* ------------------------------------------------------------------ */
 
-function MaterialBand({ values, feather, height = 64, animate = false }) {
+function MaterialBand({ values, feather, height = 64, animate = false }: any) {
   const [t, setT] = useState(animate ? 0 : 1);
   const rafRef = useRef(null);
 
@@ -486,7 +486,7 @@ const Eyebrow = ({ children, color }) => (
   </div>
 );
 
-function Ticks({ total, done }) {
+function Ticks({ total, done }: any) {
   return (
     <div style={{ display: "flex", gap: 3 }}>
       {Array.from({ length: total }).map((_, i) => (
@@ -505,7 +505,7 @@ function Ticks({ total, done }) {
   );
 }
 
-function Card({ children, style }) {
+function Card({ children, style }: any) {
   return (
     <div
       style={{
@@ -521,7 +521,7 @@ function Card({ children, style }) {
   );
 }
 
-function Button({ children, onClick, disabled, variant = "solid" }) {
+function Button({ children, onClick, disabled, variant = "solid" }: any) {
   const solid = variant === "solid";
   return (
     <button
@@ -602,7 +602,7 @@ function Intro({ onStart }) {
 /*  Экран: вопрос                                                      */
 /* ------------------------------------------------------------------ */
 
-function QuestionScreen({ q, index, answer, onAnswer, onBack, onNext }) {
+function QuestionScreen({ q, index, answer, onAnswer, onBack, onNext }: any) {
   const [pressed, setPressed] = useState(null);
 
   const optionStyle = (active) => ({
@@ -732,7 +732,7 @@ function isComplete(q, a) {
   return true;
 }
 
-function RankQuestion({ q, answer, onAnswer }) {
+function RankQuestion({ q, answer, onAnswer }: any) {
   const toggle = (id) => {
     if (answer.includes(id)) onAnswer(answer.filter((x) => x !== id));
     else onAnswer([...answer, id]);
@@ -796,7 +796,7 @@ function RankQuestion({ q, answer, onAnswer }) {
   );
 }
 
-function DistributeQuestion({ q, answer, onAnswer }) {
+function DistributeQuestion({ q, answer, onAnswer }: any) {
   const val = answer || { L: 0, S: 0, M: 0, O: 0 };
   const used = ORDER.reduce((s, p) => s + (val[p] || 0), 0);
   const left = q.total - used;
@@ -879,7 +879,7 @@ function DistributeQuestion({ q, answer, onAnswer }) {
   );
 }
 
-const stepBtn = (enabled) => ({
+const stepBtn = (enabled: boolean) => ({
   width: 36,
   height: 36,
   flexShrink: 0,
@@ -893,7 +893,7 @@ const stepBtn = (enabled) => ({
   fontFamily: SANS,
 });
 
-function ScaleQuestion({ answer, onAnswer }) {
+function ScaleQuestion({ answer, onAnswer }: any) {
   return (
     <>
       <div style={{ display: "flex", gap: 8 }}>
@@ -934,7 +934,7 @@ function ScaleQuestion({ answer, onAnswer }) {
 /*  Экран: результат                                                   */
 /* ------------------------------------------------------------------ */
 
-function PoleRow({ pole, value, H }) {
+function PoleRow({ pole, value, H }: any) {
   const p = POLES[pole];
   const from = Math.max(0, value - H / 2);
   const to = Math.min(100, value + H / 2);
@@ -998,7 +998,7 @@ function PoleRow({ pole, value, H }) {
   );
 }
 
-function TextBlock({ t, accent, compact }) {
+function TextBlock({ t, accent, compact }: any) {
   return (
     <Card style={{ borderLeft: `3px solid ${accent}` }}>
       <h3 style={{ fontFamily: SERIF, fontSize: 23, lineHeight: 1.25, fontWeight: 400, margin: "0 0 14px" }}>
@@ -1012,7 +1012,7 @@ function TextBlock({ t, accent, compact }) {
   );
 }
 
-function Detail({ label, text }) {
+function Detail({ label, text }: any) {
   return (
     <div style={{ marginTop: 16 }}>
       <Eyebrow>{label}</Eyebrow>
@@ -1023,7 +1023,7 @@ function Detail({ label, text }) {
   );
 }
 
-function Result({ res, onNext, onRestart, saved, onBack }) {
+function Result({ res, onNext, onRestart, saved, onBack }: any) {
   const [details, setDetails] = useState(false);
   const lead = POLES[res.lead];
   const second = POLES[res.second];
@@ -1317,7 +1317,7 @@ const CHAPTERS = [
   { state: "hidden", title: "Раздел ещё не назван", at: "откроется на 83%" },
 ];
 
-function Map({ res, done, onOpenResult, onStart }) {
+function Map({ res, done, onOpenResult, onStart }: any) {
   return (
     <div style={{ paddingTop: 36 }}>
       <Eyebrow>Твой профиль · изучен на 8%</Eyebrow>
@@ -1561,7 +1561,7 @@ const IconMe = ({ active }) => (
   </svg>
 );
 
-function TabBar({ tab, onTab }) {
+function TabBar({ tab, onTab }: any) {
   const items = [
     { id: "chapters", label: "Главы", Icon: IconChapters },
     { id: "me", label: "Я", Icon: IconMe },
@@ -1628,7 +1628,7 @@ const field = {
   outline: "none",
 };
 
-function SaveProfile({ initial, onSave, onSkip }) {
+function SaveProfile({ initial, onSave, onSkip }: any) {
   const [name, setName] = useState(initial?.name || "");
   const [age, setAge] = useState(initial?.age || "");
   const [gender, setGender] = useState(initial?.gender || "");
@@ -1733,7 +1733,7 @@ function SaveProfile({ initial, onSave, onSkip }) {
 /*  Экран: профиль                                                     */
 /* ------------------------------------------------------------------ */
 
-function ProgressRing({ percent }) {
+function ProgressRing({ percent }: any) {
   const r = 30;
   const len = 2 * Math.PI * r;
   return (
@@ -1931,7 +1931,7 @@ function Profile({ state, res, onOpenResult, onEdit, onReset, onSignOut }: any) 
   );
 }
 
-function Row({ label, value, last }) {
+function Row({ label, value, last }: any) {
   return (
     <div
       style={{
