@@ -9,27 +9,38 @@ import { useAuth } from "@/lib/auth";
 /* ------------------------------------------------------------------ */
 
 const C = {
-  bg: "#191714",
-  bgDeep: "#131110",
-  surface: "#221F1B",
-  surfaceUp: "#2A2621",
-  line: "rgba(255,255,255,0.09)",
-  lineSoft: "rgba(255,255,255,0.05)",
-  text: "#EDE8DF",
-  dim: "#A79F94",
-  faint: "#6E675E",
+  bg: "#F2F2F7",
+  bgCard: "#FFFFFF",
+  bgDeep: "#FFFFFF",
+  bgInput: "#FFFFFF",
+  bgInset: "#E5E5EA",
+  surface: "#FFFFFF",
+  surfaceUp: "#F2F2F7",
+  line: "rgba(60,60,67,0.12)",
+  lineSoft: "rgba(60,60,67,0.06)",
+  text: "#1C1C1E",
+  textSec: "#3A3A3C",
+  dim: "#6D6D72",
+  faint: "#AEAEB2",
+  accent: "#007AFF",
+  accentDim: "rgba(0,122,255,0.10)",
+  poleL: "#FF6B6B",
+  poleS: "#007AFF",
+  poleM: "#FF9500",
+  poleO: "#AF52DE",
+  shadow: "0 2px 12px rgba(0,0,0,0.06)",
+  shadowMd: "0 4px 24px rgba(0,0,0,0.10)",
 };
 
-const SERIF = "'Charter', 'Iowan Old Style', Georgia, 'Times New Roman', serif";
-const SANS =
-  "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Helvetica Neue', Arial, sans-serif";
-const MONO = "'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace";
+const SERIF = "-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif";
+const SANS = "-apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif";
+const MONO = "'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace";
 
 const POLES = {
-  L: { key: "L", letter: "Л", name: "Люди", to: "к людям", thanks: "за то, что ты понимаешь людей", color: "#DC8A6B" },
-  S: { key: "S", letter: "С", name: "Системы", to: "к системам и логике", thanks: "за то, что ты разбираешься в сложном", color: "#79A0BE" },
-  M: { key: "M", letter: "М", name: "Материя", to: "к тому, что можно сделать руками", thanks: "за то, что ты берёшь и делаешь", color: "#B39B57" },
-  O: { key: "O", letter: "О", name: "Образы", to: "к идеям и форме", thanks: "за то, что ты умеешь объяснять", color: "#9E86BE" },
+  L: { key: "L", letter: "Л", name: "Люди", to: "к людям", thanks: "за то, что ты понимаешь людей", color: C.poleL },
+  S: { key: "S", letter: "С", name: "Системы", to: "к системам и логике", thanks: "за то, что ты разбираешься в сложном", color: C.poleS },
+  M: { key: "M", letter: "М", name: "Материя", to: "к тому, что можно сделать руками", thanks: "за то, что ты берёшь и делаешь", color: C.poleM },
+  O: { key: "O", letter: "О", name: "Образы", to: "к идеям и форме", thanks: "за то, что ты умеешь объяснять", color: C.poleO },
 };
 const ORDER = ["L", "S", "M", "O"];
 
@@ -489,18 +500,13 @@ const Eyebrow = ({ children, color }) => (
 
 function Ticks({ total, done }: any) {
   return (
-    <div style={{ display: "flex", gap: 3 }}>
+    <div style={{ display: "flex", gap: 4 }}>
       {Array.from({ length: total }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            flex: 1,
-            height: 2,
-            borderRadius: 2,
-            background: i < done ? C.text : "rgba(255,255,255,0.12)",
-            transition: "background 300ms ease",
-          }}
-        />
+        <div key={i} style={{
+          flex: 1, height: 4, borderRadius: 4,
+          background: i < done ? C.accent : C.faint,
+          transition: "background 300ms ease",
+        }} />
       ))}
     </div>
   );
@@ -508,15 +514,13 @@ function Ticks({ total, done }: any) {
 
 function Card({ children, style }: any) {
   return (
-    <div
-      style={{
-        background: C.surface,
-        border: `1px solid ${C.line}`,
-        borderRadius: 16,
-        padding: 20,
-        ...style,
-      }}
-    >
+    <div style={{
+      background: C.bgCard,
+      borderRadius: 16,
+      padding: 20,
+      boxShadow: C.shadow,
+      ...style,
+    }}>
       {children}
     </div>
   );
@@ -554,18 +558,12 @@ function Button({ children, onClick, disabled, variant = "solid" }: any) {
 
 function Intro({ onStart }) {
   return (
-    <div style={{ paddingTop: 48 }}>
+    <div style={{ paddingTop: 56 }}>
       <Eyebrow>Глава первая</Eyebrow>
-      <h1
-        style={{
-          fontFamily: SERIF,
-          fontSize: 42,
-          lineHeight: 1.05,
-          margin: "14px 0 0",
-          fontWeight: 400,
-          letterSpacing: "-0.01em",
-        }}
-      >
+      <h1 style={{
+        fontFamily: SERIF, fontSize: 40, lineHeight: 1.08,
+        margin: "10px 0 0", fontWeight: 700, letterSpacing: "-0.02em", color: C.text,
+      }}>
         К чему тебя
         <br />
         тянет
@@ -582,11 +580,11 @@ function Intro({ onStart }) {
         ))}
       </div>
 
-      <p style={{ fontFamily: SERIF, fontSize: 20, lineHeight: 1.5, color: C.text, margin: "0 0 16px" }}>
+      <p style={{ fontFamily: SANS, fontSize: 17, lineHeight: 1.55, color: C.textSec, margin: "0 0 16px" }}>
         11 ситуаций. Без вопросов про профессии. За 3 минуты узнаешь, какой тип задач тебе ближе всего —
         люди, идеи, системы или реальные вещи.
       </p>
-      <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.6, color: C.dim, margin: "0 0 36px" }}>
+      <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.6, color: C.dim, margin: "0 0 32px" }}>
         Четыре направления делят между собой 100 баллов. Выбирая одно, ты забираешь у остальных —
         поэтому варианта «всё сразу» здесь нет.
       </p>
@@ -606,23 +604,23 @@ function Intro({ onStart }) {
 function QuestionScreen({ q, index, answer, onAnswer, onBack, onNext }: any) {
   const [pressed, setPressed] = useState(null);
 
-  const optionStyle = (active) => ({
+  const optionStyle = (active: boolean) => ({
     width: "100%",
-    textAlign: "left",
-    background: active ? C.surfaceUp : C.surface,
-    border: `1px solid ${active ? "rgba(255,255,255,0.28)" : C.line}`,
+    textAlign: "left" as const,
+    background: active ? C.accentDim : C.bgCard,
+    border: `1.5px solid ${active ? C.accent : C.line}`,
     borderRadius: 14,
-    padding: "17px 18px",
+    padding: "16px 18px",
     color: C.text,
     fontFamily: SANS,
-    fontSize: 15.5,
+    fontSize: 16,
     lineHeight: 1.45,
     cursor: "pointer",
     display: "flex",
     gap: 14,
     alignItems: "center",
-    transition: "background 140ms ease, border-color 140ms ease, transform 120ms ease",
-    transform: pressed === active ? "scale(0.99)" : "none",
+    boxShadow: active ? "none" : C.shadow,
+    transition: "all 140ms ease",
   });
 
   return (
@@ -643,15 +641,10 @@ function QuestionScreen({ q, index, answer, onAnswer, onBack, onNext }: any) {
         {q.tag && <Eyebrow>{q.tag}</Eyebrow>}
       </div>
 
-      <h2
-        style={{
-          fontFamily: SERIF,
-          fontSize: 26,
-          lineHeight: 1.25,
-          fontWeight: 400,
-          margin: "0 0 8px",
-        }}
-      >
+      <h2 style={{
+        fontFamily: SERIF, fontSize: 24, lineHeight: 1.3,
+        fontWeight: 700, margin: "0 0 8px", color: C.text,
+      }}>
         {q.kind === "scale" ? `«${q.text}»` : q.text}
       </h2>
       {q.hint && (
@@ -673,16 +666,14 @@ function QuestionScreen({ q, index, answer, onAnswer, onBack, onNext }: any) {
                 onMouseUp={() => setPressed(null)}
                 onClick={() => onAnswer(o.id)}
               >
-                <span
-                  style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 9,
-                    flexShrink: 0,
-                    border: `1.5px solid ${active ? C.text : "rgba(255,255,255,0.25)"}`,
-                    background: active ? C.text : "transparent",
-                  }}
-                />
+                <span style={{
+                    width: 22, height: 22, borderRadius: 11, flexShrink: 0,
+                    border: `2px solid ${active ? C.accent : C.faint}`,
+                    background: active ? C.accent : "transparent",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {active && <span style={{ width: 8, height: 8, borderRadius: 4, background: "#fff" }} />}
+                  </span>
                 <span>{o.label}</span>
               </button>
             );
@@ -706,9 +697,10 @@ function QuestionScreen({ q, index, answer, onAnswer, onBack, onNext }: any) {
           style={{
             background: "transparent",
             border: "none",
-            color: C.faint,
+            color: C.accent,
             fontFamily: SANS,
-            fontSize: 15,
+            fontSize: 17,
+            fontWeight: 500,
             padding: "12px 4px",
             cursor: "pointer",
           }}
@@ -750,36 +742,24 @@ function RankQuestion({ q, answer, onAnswer }: any) {
             className="tap"
             onClick={() => toggle(item.id)}
             style={{
-              width: "100%",
-              textAlign: "left",
-              background: active ? C.surfaceUp : C.surface,
-              border: `1px solid ${active ? color + "88" : C.line}`,
-              borderRadius: 14,
-              padding: "16px 18px",
-              color: C.text,
-              fontFamily: SANS,
-              fontSize: 15.5,
-              lineHeight: 1.4,
-              cursor: "pointer",
-              display: "flex",
-              gap: 14,
-              alignItems: "center",
+              width: "100%", textAlign: "left" as const,
+              background: active ? C.accentDim : C.bgCard,
+              border: `1.5px solid ${active ? C.accent : C.line}`,
+              borderRadius: 14, padding: "16px 18px",
+              color: C.text, fontFamily: SANS, fontSize: 16, lineHeight: 1.4,
+              cursor: "pointer", display: "flex", gap: 14, alignItems: "center",
+              boxShadow: active ? "none" : C.shadow,
               transition: "all 150ms ease",
             }}
           >
             <span
               style={{
-                width: 26,
-                height: 26,
-                borderRadius: 13,
-                flexShrink: 0,
-                display: "grid",
-                placeItems: "center",
-                fontFamily: MONO,
-                fontSize: 13,
-                background: active ? color : "transparent",
-                color: active ? C.bgDeep : C.faint,
-                border: active ? "none" : "1px dashed rgba(255,255,255,0.2)",
+                width: 28, height: 28, borderRadius: 14, flexShrink: 0,
+                display: "grid", placeItems: "center",
+                fontFamily: SANS, fontSize: 13, fontWeight: 700,
+                background: active ? C.accent : "transparent",
+                color: active ? "#fff" : C.faint,
+                border: active ? "none" : `2px dashed ${C.faint}`,
               }}
             >
               {active ? pos + 1 : ""}
@@ -833,13 +813,11 @@ function DistributeQuestion({ q, answer, onAnswer }: any) {
           <div
             key={item.pole}
             style={{
-              background: C.surface,
-              border: `1px solid ${v > 0 ? color + "66" : C.line}`,
+              background: C.bgCard, boxShadow: C.shadow,
+              border: `1.5px solid ${v > 0 ? color : C.line}`,
               borderRadius: 14,
               padding: "14px 14px 14px 18px",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
+              display: "flex", alignItems: "center", gap: 12,
               transition: "border-color 150ms ease",
             }}
           >
@@ -880,18 +858,15 @@ function DistributeQuestion({ q, answer, onAnswer }: any) {
   );
 }
 
-const stepBtn = (enabled: boolean) => ({
-  width: 36,
-  height: 36,
-  flexShrink: 0,
-  borderRadius: 10,
-  border: `1px solid ${C.line}`,
-  background: enabled ? "rgba(255,255,255,0.06)" : "transparent",
-  color: enabled ? C.text : C.faint,
-  fontSize: 18,
-  lineHeight: 1,
+const stepBtn = (enabled: boolean): React.CSSProperties => ({
+  width: 36, height: 36, flexShrink: 0, borderRadius: 10,
+  border: `1.5px solid ${enabled ? C.accent : C.faint}`,
+  background: enabled ? C.accentDim : "transparent",
+  color: enabled ? C.accent : C.faint,
+  fontSize: 20, lineHeight: "1",
   cursor: enabled ? "pointer" : "default",
   fontFamily: SANS,
+  display: "flex", alignItems: "center", justifyContent: "center",
 });
 
 function ScaleQuestion({ answer, onAnswer }: any) {
@@ -964,7 +939,7 @@ function PoleRow({ pole, value, H }: any) {
             position: "relative",
             height: 6,
             borderRadius: 3,
-            background: "rgba(255,255,255,0.07)",
+            background: C.faint,
           }}
         >
           <div
@@ -1002,10 +977,10 @@ function PoleRow({ pole, value, H }: any) {
 function TextBlock({ t, accent, compact }: any) {
   return (
     <Card style={{ borderLeft: `3px solid ${accent}` }}>
-      <h3 style={{ fontFamily: SERIF, fontSize: 23, lineHeight: 1.25, fontWeight: 400, margin: "0 0 14px" }}>
+      <h3 style={{ fontFamily: SERIF, fontSize: 22, lineHeight: 1.25, fontWeight: 700, margin: "0 0 12px", color: C.text }}>
         {t.title}
       </h3>
-      <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.6, color: C.text, margin: 0 }}>{t.body}</p>
+      <p style={{ fontFamily: SANS, fontSize: 16, lineHeight: 1.6, color: C.textSec, margin: 0 }}>{t.body}</p>
       {!compact && t.life && <Detail label="В жизни" text={t.life} />}
       {!compact && t.power && <Detail label="Твоя сила" text={t.power} />}
       {t.watch && <Detail label="На что смотреть" text={t.watch} />}
@@ -1462,20 +1437,57 @@ async function saveState(state) {
 
 
 /* ------------------------------------------------------------------ */
-/*  Экран входа                                                         */
+/*  Экран входа — появляется после результата                         */
 /* ------------------------------------------------------------------ */
 
-const fieldStyle: React.CSSProperties = {
+const fieldStyleAuth: React.CSSProperties = {
   width: "100%",
-  boxSizing: "border-box" as const,
-  background: C.bgDeep,
+  background: C.bgCard,
   border: `1px solid ${C.line}`,
   borderRadius: 12,
-  padding: "15px 16px",
+  padding: "14px 16px",
   color: C.text,
   fontFamily: SANS,
-  fontSize: 16,
+  fontSize: 17,
+  boxShadow: C.shadow,
 };
+
+function GoogleButton({ onClick, loading }: any) {
+  return (
+    <button
+      className="tap"
+      onClick={onClick}
+      disabled={loading}
+      style={{
+        width: "100%",
+        minHeight: 54,
+        borderRadius: 14,
+        border: `1px solid ${C.line}`,
+        background: C.bgCard,
+        color: C.text,
+        fontFamily: SANS,
+        fontSize: 17,
+        fontWeight: 600,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        boxShadow: C.shadow,
+        transition: "opacity 150ms ease",
+      }}
+    >
+      {!loading && (
+        <svg width="20" height="20" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+      )}
+      {loading ? "Секунду…" : "Войти через Google"}
+    </button>
+  );
+}
 
 function AuthGate() {
   const { signIn, signUp } = useAuth();
@@ -1484,6 +1496,16 @@ function AuthGate() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    const { supabase } = await import("@/lib/supabase");
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: "https://reyou-olive.vercel.app" },
+    });
+  };
 
   const submit = async () => {
     setError(null);
@@ -1493,8 +1515,8 @@ function AuthGate() {
     setLoading(false);
     if (err) {
       if (err.includes("Invalid login")) setError("Неверная почта или пароль");
-      else if (err.includes("already registered")) setError("Эта почта уже зарегистрирована. Попробуй войти.");
-      else if (err.includes("Password should be")) setError("Пароль должен быть не короче 6 символов");
+      else if (err.includes("already registered")) setError("Уже зарегистрирован. Войди.");
+      else if (err.includes("Password should be")) setError("Пароль — не короче 6 символов");
       else setError(err);
     }
   };
@@ -1502,33 +1524,77 @@ function AuthGate() {
   const ok = email.includes("@") && password.length >= 6;
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", color: C.text }}>
-      <style>{`.tap:active{transform:scale(0.985)}.tap:focus-visible{outline:2px solid #EDE8DF;outline-offset:3px}button{-webkit-tap-highlight-color:transparent}input::placeholder{color:#6E675E}input:focus{border-color:rgba(255,255,255,0.28)!important;outline:none}@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}`}</style>
-      <div style={{ maxWidth: 420, margin: "0 auto", padding: "64px 20px" }}>
-        <h1 style={{ fontFamily: SERIF, fontSize: 36, lineHeight: 1.1, fontWeight: 400, margin: "0 0 10px" }}>Твоё поле</h1>
-        <p style={{ fontFamily: SANS, fontSize: 16, lineHeight: 1.55, color: C.dim, margin: "0 0 36px" }}>
-          {mode === "login" ? "Войди, чтобы вернуться к своим результатам." : "Создай аккаунт, чтобы сохранить прогресс на любом устройстве."}
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div>
-            <div style={{ marginBottom: 8 }}><Eyebrow>Почта</Eyebrow></div>
-            <input style={fieldStyle} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" />
-          </div>
-          <div>
-            <div style={{ marginBottom: 8 }}><Eyebrow>Пароль</Eyebrow></div>
-            <input style={fieldStyle} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Не короче 6 символов" autoComplete={mode === "login" ? "current-password" : "new-password"} />
-          </div>
-        </div>
-        {error && <p style={{ fontFamily: SANS, fontSize: 14, color: "#DC8A6B", marginTop: 14 }}>{error}</p>}
-        <div style={{ marginTop: 24 }}><Button onClick={submit} disabled={!ok || loading}>{loading ? "Секунду…" : mode === "login" ? "Войти" : "Создать аккаунт"}</Button></div>
-        <button className="tap" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(null); }}
-          style={{ marginTop: 18, background: "transparent", border: "none", color: C.dim, fontFamily: SANS, fontSize: 14, cursor: "pointer", width: "100%", textAlign: "center" as const }}>
-          {mode === "login" ? "Нет аккаунта? Создать" : "Уже есть аккаунт? Войти"}
-        </button>
+    <div style={{ paddingTop: 40, paddingBottom: 40 }}>
+      <h2 style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 700, margin: "0 0 8px", color: C.text }}>
+        Сохранить результат
+      </h2>
+      <p style={{ fontFamily: SANS, fontSize: 16, color: C.dim, margin: "0 0 28px", lineHeight: 1.5 }}>
+        Войди, чтобы вернуться к своему профилю с любого устройства.
+      </p>
+
+      <GoogleButton onClick={handleGoogle} loading={loading} />
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
+        <div style={{ flex: 1, height: 1, background: C.line }} />
+        <span style={{ fontFamily: SANS, fontSize: 13, color: C.faint }}>или</span>
+        <div style={{ flex: 1, height: 1, background: C.line }} />
       </div>
+
+      {!showEmail ? (
+        <button
+          className="tap"
+          onClick={() => setShowEmail(true)}
+          style={{
+            width: "100%", minHeight: 54, borderRadius: 14,
+            border: `1px solid ${C.line}`, background: "transparent",
+            color: C.dim, fontFamily: SANS, fontSize: 17, fontWeight: 500,
+          }}
+        >
+          Войти через почту
+        </button>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <input
+            style={fieldStyleAuth} type="email" value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Почта" autoComplete="email"
+          />
+          <input
+            style={fieldStyleAuth} type="password" value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Пароль (не короче 6 символов)"
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
+          />
+          {error && (
+            <p style={{ fontFamily: SANS, fontSize: 14, color: C.poleL, margin: 0 }}>{error}</p>
+          )}
+          <button
+            className="tap"
+            onClick={submit}
+            disabled={!ok || loading}
+            style={{
+              width: "100%", minHeight: 54, borderRadius: 14, border: "none",
+              background: ok && !loading ? C.accent : C.faint,
+              color: "#fff", fontFamily: SANS, fontSize: 17, fontWeight: 600,
+              transition: "background 150ms ease",
+            }}
+          >
+            {loading ? "Секунду…" : mode === "login" ? "Войти" : "Создать аккаунт"}
+          </button>
+          <button
+            className="tap"
+            onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(null); }}
+            style={{ background: "none", border: "none", color: C.accent, fontFamily: SANS, fontSize: 15, padding: "8px 0" }}
+          >
+            {mode === "login" ? "Нет аккаунта? Создать" : "Уже есть аккаунт? Войти"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+
+
 /* ------------------------------------------------------------------ */
 /*  Иконки                                                             */
 /* ------------------------------------------------------------------ */
@@ -1591,7 +1657,7 @@ function TabBar({ tab, onTab }: any) {
               flex: 1,
               background: "transparent",
               border: "none",
-              color: active ? C.text : C.faint,
+              color: active ? C.accent : C.faint,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -1957,42 +2023,38 @@ function Row({ label, value, last }: any) {
 /*  Shell                                                              */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/*  iOS Shell                                                          */
+/* ------------------------------------------------------------------ */
+
 function Shell({ children }: any) {
   return (
-    <div
-      style={{
-        background: `radial-gradient(120% 80% at 50% 0%, #221E19 0%, ${C.bg} 45%, ${C.bgDeep} 100%)`,
-        minHeight: "100vh",
-        color: C.text,
-        WebkitFontSmoothing: "antialiased",
-      }}
-    >
+    <div style={{ background: C.bg, minHeight: "100vh", color: C.text }}>
       <style>{`
-        .tap:active { transform: scale(0.985); }
-        .tap:focus-visible { outline: 2px solid #EDE8DF; outline-offset: 3px; }
-        button { -webkit-tap-highlight-color: transparent; }
-        input::placeholder { color: #6E675E; }
-        input:focus { border-color: rgba(255,255,255,0.28) !important; }
+        * { box-sizing: border-box; }
+        .tap:active { opacity: 0.6; transform: scale(0.98); }
+        .tap:focus-visible { outline: 2px solid ${C.accent}; outline-offset: 2px; }
+        button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
+        input::placeholder { color: ${C.faint}; }
+        input:focus { outline: none; }
         @media (prefers-reduced-motion: reduce) {
           * { transition: none !important; animation: none !important; }
         }
       `}</style>
-      <div
-        style={{
-          maxWidth: 560,
-          margin: "0 auto",
-          padding: "0 20px 0",
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          position: "relative",
-        }}
-      >
+      <div style={{
+        maxWidth: 560,
+        margin: "0 auto",
+        padding: "0 16px",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}>
         {children}
       </div>
     </div>
   );
 }
+
 
 export default function Home() {
   const { ready, user, state, saveProfile, saveChapter, signOut } = useAuth();
@@ -2003,7 +2065,6 @@ export default function Home() {
   const [fromProfile, setFromProfile] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
 
-  // Восстановить ответы если глава уже пройдена
   useEffect(() => {
     if (ready && user && state.ch1) {
       setAnswers(state.ch1.answers as Record<string, unknown>);
@@ -2020,16 +2081,15 @@ export default function Home() {
   const q = QUESTIONS[index];
 
   const finish = useCallback(async () => {
-    // Собрать замеры для базы
-    const measurements = ORDER.map((pole) => ({
-      pole,
-      kind: "ipsative" as string,
-      value: res.pct[pole],
-      weight: res.sumW,
-    }));
-    await saveChapter("ch1", answers, measurements);
+    if (user) {
+      const measurements = ORDER.map((pole) => ({
+        pole, kind: "ipsative" as string,
+        value: res.pct[pole], weight: res.sumW,
+      }));
+      await saveChapter("ch1", answers, measurements);
+    }
     setScreen("result");
-  }, [answers, res, saveChapter]);
+  }, [answers, res, saveChapter, user]);
 
   const next = () => {
     if (index === QUESTIONS.length - 1) finish();
@@ -2049,14 +2109,16 @@ export default function Home() {
 
   if (!ready) {
     return (
-      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: C.bgDeep }}>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: C.faint, letterSpacing: "0.18em" }}>загрузка…</span>
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: C.bg }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: 22,
+          border: `3px solid ${C.faint}`,
+          borderTopColor: C.accent,
+          animation: "spin 0.8s linear infinite",
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
-  }
-
-  if (!user) {
-    return <AuthGate />;
   }
 
   const showTabs = screen === "tabs";
@@ -2064,36 +2126,58 @@ export default function Home() {
   return (
     <Shell>
       <div ref={topRef} style={{ position: "absolute", top: 0 }} />
+
       {screen === "intro" && (
         <Intro onStart={() => { setIndex(0); setScreen("q"); }} />
       )}
+
       {screen === "q" && (
         <QuestionScreen
-          q={q}
-          index={index}
-          answer={answers[q.id]}
+          q={q} index={index} answer={answers[q.id]}
           onAnswer={(v: unknown) => setAnswers((a) => ({ ...a, [q.id]: v }))}
-          onBack={back}
-          onNext={next}
+          onBack={back} onNext={next}
         />
       )}
+
       {screen === "result" && (
         <Result
           res={res}
-          saved={!!state.profile}
+          saved={!!user}
           onBack={fromProfile ? () => { setFromProfile(false); setScreen("tabs"); } : undefined}
           onNext={() => {
             if (fromProfile) { setFromProfile(false); setScreen("tabs"); }
-            else if (state.profile) { setScreen("tabs"); setTab("me"); }
-            else setScreen("save");
+            else if (user && state.profile) { setScreen("tabs"); setTab("me"); }
+            else if (user) { setScreen("save"); }
+            else { setScreen("auth"); }
           }}
           onRestart={restart}
         />
       )}
+
+      {screen === "auth" && (
+        <div style={{ paddingTop: 20 }}>
+          <button
+            className="tap"
+            onClick={() => setScreen("result")}
+            style={{ background: "none", border: "none", color: C.accent, fontFamily: SANS, fontSize: 17, padding: "0 0 16px" }}
+          >
+            ← Назад
+          </button>
+          <AuthGate />
+          <button
+            className="tap"
+            onClick={() => { setScreen("tabs"); setTab("chapters"); }}
+            style={{ width: "100%", background: "none", border: "none", color: C.dim, fontFamily: SANS, fontSize: 15, padding: "16px 0", marginTop: 8 }}
+          >
+            Пропустить — продолжить без сохранения
+          </button>
+        </div>
+      )}
+
       {screen === "save" && (
         <SaveProfile
           initial={state.profile}
-          onSave={async (p) => {
+          onSave={async (p: any) => {
             await saveProfile(p);
             setScreen("tabs");
             setTab("me");
@@ -2101,29 +2185,22 @@ export default function Home() {
           onSkip={() => { setScreen("tabs"); setTab("chapters"); }}
         />
       )}
+
       {showTabs && (
         <>
           {tab === "chapters" && (
             <Map
-              res={res}
-              done={!!state.ch1}
+              res={res} done={!!state.ch1}
               onOpenResult={() => { setFromProfile(true); setScreen("result"); }}
               onStart={() => { setAnswers({}); setIndex(0); setScreen("q"); }}
             />
           )}
           {tab === "me" && (
             <Profile
-              state={state}
-              res={res}
+              state={state} res={res}
               onOpenResult={() => { setFromProfile(true); setScreen("result"); }}
               onEdit={() => setScreen("save")}
-              onReset={async () => {
-                // только сбрасываем локальный стейт для переделки
-                setAnswers({});
-                setIndex(0);
-                setTab("chapters");
-                setScreen("intro");
-              }}
+              onReset={() => { setAnswers({}); setIndex(0); setTab("chapters"); setScreen("intro"); }}
               onSignOut={signOut}
             />
           )}
