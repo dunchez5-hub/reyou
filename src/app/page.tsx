@@ -512,15 +512,17 @@ function Ticks({ total, done }: any) {
   );
 }
 
+const GLASS: React.CSSProperties = {
+  background: "rgba(255,255,255,0.74)",
+  backdropFilter: "blur(24px) saturate(160%)",
+  WebkitBackdropFilter: "blur(24px) saturate(160%)",
+  border: "1px solid rgba(255,255,255,0.6)",
+  boxShadow: "0 10px 40px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.9)",
+};
+
 function Card({ children, style }: any) {
   return (
-    <div style={{
-      background: C.bgCard,
-      borderRadius: 16,
-      padding: 20,
-      boxShadow: C.shadow,
-      ...style,
-    }}>
+    <div style={{ ...GLASS, borderRadius: 20, padding: 24, ...style }}>
       {children}
     </div>
   );
@@ -535,16 +537,27 @@ function Button({ children, onClick, disabled, variant = "solid" }: any) {
       disabled={disabled}
       style={{
         width: "100%",
-        minHeight: 54,
-        borderRadius: 14,
-        border: solid ? "none" : `1px solid ${C.line}`,
-        background: disabled ? "rgba(255,255,255,0.06)" : solid ? C.text : "transparent",
-        color: disabled ? C.faint : solid ? C.bgDeep : C.text,
+        minHeight: 56,
+        borderRadius: 16,
+        border: solid ? "none" : "1.5px solid rgba(255,255,255,0.7)",
+        background: disabled
+          ? "rgba(120,120,128,0.16)"
+          : solid
+          ? `linear-gradient(180deg, #2B90FF 0%, ${C.accent} 100%)`
+          : "rgba(255,255,255,0.62)",
+        backdropFilter: solid ? undefined : "blur(20px)",
+        WebkitBackdropFilter: solid ? undefined : "blur(20px)",
+        color: disabled ? "rgba(60,60,67,0.4)" : solid ? "#fff" : C.accent,
         fontFamily: SANS,
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: 600,
+        letterSpacing: "-0.01em",
         cursor: disabled ? "default" : "pointer",
-        transition: "transform 120ms ease, opacity 150ms ease",
+        boxShadow: disabled
+          ? "none"
+          : solid
+          ? "0 8px 24px rgba(0,122,255,0.28), inset 0 1px 0 rgba(255,255,255,0.25)"
+          : "0 2px 12px rgba(0,0,0,0.05)",
       }}
     >
       {children}
@@ -558,7 +571,7 @@ function Button({ children, onClick, disabled, variant = "solid" }: any) {
 
 function Intro({ onStart, user, onProfile }: any) {
   return (
-    <div style={{ paddingTop: 56 }}>
+    <div className="scene" style={{ paddingTop: 56 }}>
       {user && (
         <button
           className="tap"
@@ -618,15 +631,21 @@ function Intro({ onStart, user, onProfile }: any) {
 /* ------------------------------------------------------------------ */
 
 function QuestionScreen({ q, index, answer, onAnswer, onBack, onNext }: any) {
-  const [pressed, setPressed] = useState(null);
+  const left = QUESTIONS.length - index - 1;
+  const secs = left * 16;
+  const minutesLeft =
+    secs >= 90 ? `${Math.round(secs / 60)} мин` : secs >= 45 ? "около минуты" : "меньше минуты";
 
-  const optionStyle = (active: boolean) => ({
+  const anySelected = answer != null;
+  const optionStyle = (active: boolean): React.CSSProperties => ({
     width: "100%",
     textAlign: "left" as const,
-    background: active ? C.accentDim : C.bgCard,
-    border: `1.5px solid ${active ? C.accent : C.line}`,
-    borderRadius: 14,
-    padding: "16px 18px",
+    background: active ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.68)",
+    backdropFilter: "blur(20px) saturate(160%)",
+    WebkitBackdropFilter: "blur(20px) saturate(160%)",
+    border: `1.5px solid ${active ? C.accent : "rgba(255,255,255,0.65)"}`,
+    borderRadius: 18,
+    padding: "18px 20px",
     color: C.text,
     fontFamily: SANS,
     fontSize: 16,
@@ -635,26 +654,35 @@ function QuestionScreen({ q, index, answer, onAnswer, onBack, onNext }: any) {
     display: "flex",
     gap: 14,
     alignItems: "center",
-    boxShadow: active ? "none" : C.shadow,
-    transition: "all 140ms ease",
+    transform: active ? "scale(1.015)" : "scale(1)",
+    opacity: anySelected && !active ? 0.55 : 1,
+    boxShadow: active
+      ? `0 10px 30px rgba(0,122,255,0.22), inset 0 1px 0 rgba(255,255,255,0.9)`
+      : "0 6px 20px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
+    transition: "transform 200ms cubic-bezier(.2,.8,.2,1), opacity 200ms ease, box-shadow 200ms ease, border-color 200ms ease, background 200ms ease",
   });
 
   return (
-    <div style={{ paddingTop: 24 }}>
+    <div className="scene" style={{ paddingTop: 24 }}>
       <Ticks total={QUESTIONS.length} done={index} />
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginTop: 14,
-          marginBottom: 26,
-        }}
-      >
-        <Eyebrow>
-          Вопрос {String(index + 1).padStart(2, "0")} · {QUESTIONS.length}
-        </Eyebrow>
-        {q.tag && <Eyebrow>{q.tag}</Eyebrow>}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "baseline",
+        marginTop: 16,
+        marginBottom: 32,
+      }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <span style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 700, color: C.text, letterSpacing: "-0.02em" }}>
+            {index + 1}
+          </span>
+          <span style={{ fontFamily: SANS, fontSize: 15, color: C.dim }}>
+            из {QUESTIONS.length}
+          </span>
+        </div>
+        <span style={{ fontFamily: SANS, fontSize: 14, color: C.dim }}>
+          {left <= 0 ? "последний вопрос" : left === 1 ? "остался один" : `осталось ${minutesLeft}`}
+        </span>
       </div>
 
       <h2 style={{
@@ -686,7 +714,7 @@ function QuestionScreen({ q, index, answer, onAnswer, onBack, onNext }: any) {
                 style={optionStyle(active)}
                 onMouseDown={() => setPressed(active)}
                 onMouseUp={() => setPressed(null)}
-                onClick={() => onAnswer(o.id)}
+                onClick={() => { try { (navigator as any).vibrate?.(8); } catch {} onAnswer(o.id); }}
               >
                 <span style={{
                     width: 22, height: 22, borderRadius: 11, flexShrink: 0,
@@ -1026,6 +1054,94 @@ function Detail({ label, text }: any) {
   );
 }
 
+
+/* ------------------------------------------------------------------ */
+/*  Скачивание результата (.doc — открывается в Word и Google Docs)     */
+/* ------------------------------------------------------------------ */
+
+function buildResultDoc(res: any, name?: string) {
+  const lead = POLES[res.lead];
+  const t = TEXTS[res.lead][levelOf(res.pct[res.lead])];
+  const second = POLES[res.second];
+  const link = LINKS[res.lead + res.second];
+  const strongSecond = res.pct[res.second] >= 25;
+  const last = POLES[res.last];
+  const tLast = TEXTS[res.last][levelOf(res.pct[res.last])];
+  const today = new Date().toLocaleDateString("ru-RU", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+
+  const esc = (s: string) =>
+    String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const rows = res.ranked
+    .map(
+      (p: string) =>
+        `<tr><td style="padding:6px 16px 6px 0;"><b>${POLES[p].name}</b></td>` +
+        `<td style="padding:6px 0;">${Math.round(res.pct[p])} из 100</td></tr>`
+    )
+    .join("");
+
+  const section = (title: string, body: string) =>
+    body ? `<p style="margin:14px 0 4px;"><b>${esc(title)}</b></p><p style="margin:0;">${esc(body)}</p>` : "";
+
+  const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>Твоё поле</title></head>
+<body style="font-family:Georgia,serif; font-size:12pt; line-height:1.6; color:#1C1C1E;">
+  <h1 style="font-size:24pt; margin:0 0 4px;">Твоё поле</h1>
+  <p style="margin:0 0 24px; color:#6D6D72;">
+    Глава 1 — «К чему тебя тянет»${name ? ` · ${esc(name)}` : ""} · ${today}
+  </p>
+
+  <h2 style="font-size:16pt; margin:0 0 8px;">Ведущее направление: ${esc(lead.name)}</h2>
+  <table style="margin:0 0 20px; border-collapse:collapse;">${rows}</table>
+
+  <h2 style="font-size:15pt; margin:24px 0 8px;">${esc(t.title)}</h2>
+  <p style="margin:0;">${esc(t.body)}</p>
+  ${section("В жизни", t.life)}
+  ${section("Твоя сила", t.power)}
+  ${section("На что смотреть", t.watch)}
+
+  ${
+    strongSecond && link
+      ? `<h2 style="font-size:15pt; margin:28px 0 8px;">Связка: ${esc(lead.letter)} + ${esc(second.letter)} — ${esc(link.title)}</h2>
+         <p style="margin:0;">${esc(link.body)}</p>
+         <p style="margin:12px 0 0;"><b>Куда смотреть:</b> ${esc(link.where)}</p>`
+      : ""
+  }
+
+  <h2 style="font-size:15pt; margin:28px 0 8px;">Что отпало: ${esc(last.name)}</h2>
+  <p style="margin:0;">${esc(tLast.body)}</p>
+  ${section("На что смотреть", tLast.watch)}
+
+  <p style="margin:32px 0 0; color:#6D6D72; font-size:10pt;">
+    Это первый замер. Следующие главы уточнят картину — она не поменяется целиком, но станет резче.
+  </p>
+</body></html>`;
+
+  return html;
+}
+
+function downloadResult(res: any, name?: string) {
+  try {
+    const html = buildResultDoc(res, name);
+    const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tvoyo-pole-glava-1.doc";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (e) {
+    console.error("download failed", e);
+  }
+}
+
 function Result({ res, onNext, onRestart, saved, onBack }: any) {
   const [details, setDetails] = useState(false);
   const isDebug =
@@ -1044,7 +1160,7 @@ function Result({ res, onNext, onRestart, saved, onBack }: any) {
       : `Твоё поле — ${lead.name.toLowerCase()}`;
 
   return (
-    <div style={{ paddingTop: 28 }}>
+    <div className="scene" style={{ paddingTop: 28 }}>
       {onBack && (
         <button
           className="tap"
@@ -1064,7 +1180,56 @@ function Result({ res, onNext, onRestart, saved, onBack }: any) {
       )}
       <Eyebrow>Глава 1 пройдена · первый замер</Eyebrow>
 
-      <div style={{ display: "flex", gap: 8, margin: "20px 0 16px" }}>
+      {!res.flat && (
+        <div style={{
+          position: "relative",
+          marginTop: 16,
+          marginBottom: 8,
+          borderRadius: 24,
+          padding: "32px 24px 28px",
+          overflow: "hidden",
+          background: `linear-gradient(160deg, ${lead.color}1F 0%, rgba(255,255,255,0.72) 70%)`,
+          border: "1px solid rgba(255,255,255,0.7)",
+          boxShadow: "0 14px 44px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
+          backdropFilter: "blur(24px) saturate(160%)",
+          WebkitBackdropFilter: "blur(24px) saturate(160%)",
+        }}>
+          <span aria-hidden style={{
+            position: "absolute",
+            right: -18,
+            bottom: -64,
+            fontFamily: SERIF,
+            fontSize: 220,
+            fontWeight: 800,
+            lineHeight: 1,
+            color: lead.color,
+            opacity: 0.16,
+            letterSpacing: "-0.04em",
+            pointerEvents: "none",
+          }}>
+            {lead.letter}
+          </span>
+          <div style={{ position: "relative" }}>
+            <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: lead.color, marginBottom: 6 }}>
+              Твоё ведущее направление
+            </div>
+            <div style={{
+              fontFamily: SERIF, fontSize: 34, fontWeight: 700,
+              letterSpacing: "-0.025em", color: C.text, lineHeight: 1.1,
+            }}>
+              {lead.name}
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 14 }}>
+              <span style={{ fontFamily: SERIF, fontSize: 44, fontWeight: 700, color: lead.color, letterSpacing: "-0.03em" }}>
+                {Math.round(res.pct[res.lead])}
+              </span>
+              <span style={{ fontFamily: SANS, fontSize: 16, color: C.dim }}>из 100</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8, margin: "16px 0 16px" }}>
         {res.ranked.map((p: string, i: number) => (
           <div key={p} style={{
             flex: i === 0 ? 2 : 1,
@@ -1259,9 +1424,38 @@ function Result({ res, onNext, onRestart, saved, onBack }: any) {
         сторону, а наши реальные сильные стороны уже проявились совсем в другой.
       </p>
 
+      {!saved && !onBack && (
+        <div style={{
+          ...GLASS,
+          borderRadius: 20,
+          padding: 20,
+          marginBottom: 16,
+          borderLeft: `3px solid ${C.accent}`,
+        }}>
+          <div style={{ fontFamily: SANS, fontSize: 17, fontWeight: 600, color: C.text, marginBottom: 10 }}>
+            Сохрани, чтобы не проходить заново
+          </div>
+          <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.55, color: C.textSec }}>
+            Сейчас результат живёт только на этой странице. Закроешь вкладку — он исчезнет,
+            и главу придётся проходить с нуля.
+          </div>
+          <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.55, color: C.textSec, marginTop: 12 }}>
+            Впереди ещё пять глав, и каждая уточняет эту картину. Они складываются
+            только если результаты копятся в одном профиле — с ним ты вернёшься
+            с любого телефона и увидишь, как менялся со временем.
+          </div>
+        </div>
+      )}
+
       <Button onClick={onNext}>
         {onBack ? "Вернуться в профиль" : saved ? "Открыть профиль" : "Сохранить результат"}
       </Button>
+
+      <div style={{ marginTop: 12 }}>
+        <Button variant="ghost" onClick={() => downloadResult(res)}>
+          Скачать разбор документом
+        </Button>
+      </div>
 
       {isDebug && (
       <button
@@ -1344,7 +1538,7 @@ const CHAPTERS = [
 
 function Map({ res, done, onOpenResult, onStart }: any) {
   return (
-    <div style={{ paddingTop: 36 }}>
+    <div className="scene" style={{ paddingTop: 36 }}>
       <Eyebrow>Твой профиль · изучен на 8%</Eyebrow>
       <h2
         style={{
@@ -1583,13 +1777,35 @@ function AuthGate() {
   const ok = email.includes("@") && password.length >= 6;
 
   return (
-    <div style={{ paddingTop: 40, paddingBottom: 40 }}>
-      <h2 style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 700, margin: "0 0 8px", color: C.text }}>
+    <div className="scene" style={{ paddingTop: 40, paddingBottom: 40 }}>
+      <h2 style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 700, margin: "0 0 10px", color: C.text, letterSpacing: "-0.02em" }}>
         Сохранить результат
       </h2>
-      <p style={{ fontFamily: SANS, fontSize: 16, color: C.dim, margin: "0 0 28px", lineHeight: 1.5 }}>
-        Войди, чтобы вернуться к своему профилю с любого устройства.
+      <p style={{ fontFamily: SANS, fontSize: 16, color: C.textSec, margin: "0 0 20px", lineHeight: 1.55 }}>
+        Аккаунт нужен для одного: чтобы твои главы копились в одном месте.
       </p>
+
+      <div style={{ ...GLASS, borderRadius: 20, padding: 20, marginBottom: 24 }}>
+        {[
+          ["Результат не потеряется", "Без аккаунта он живёт только в этой вкладке. Закроешь — и главу придётся проходить заново."],
+          ["Главы складываются", "Впереди ещё пять. Каждая уточняет предыдущую, но только если они привязаны к одному профилю."],
+          ["Видно, как ты меняешься", "Через полгода можно пройти снова и сравнить — это и есть главное, ради чего всё затевалось."],
+        ].map(([title, body], i) => (
+          <div key={i} style={{ display: "flex", gap: 12, marginTop: i === 0 ? 0 : 16 }}>
+            <div style={{
+              width: 22, height: 22, borderRadius: 11, flexShrink: 0, marginTop: 1,
+              background: C.accent, color: "#fff", display: "grid", placeItems: "center",
+              fontFamily: SANS, fontSize: 13, fontWeight: 700,
+            }}>
+              ✓
+            </div>
+            <div>
+              <div style={{ fontFamily: SANS, fontSize: 15.5, fontWeight: 600, color: C.text }}>{title}</div>
+              <div style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.5, color: C.dim, marginTop: 3 }}>{body}</div>
+            </div>
+          </div>
+        ))}
+      </div>
 
       <GoogleButton onClick={handleGoogle} loading={loading} />
 
@@ -1900,7 +2116,7 @@ function Profile({ state, res, onOpenResult, onEdit, onReset, onSignOut }: any) 
     : "";
 
   return (
-    <div style={{ paddingTop: 36 }}>
+    <div className="scene" style={{ paddingTop: 36 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 26 }}>
         <ProgressRing percent={done ? 8 : 0} />
         <div style={{ minWidth: 0 }}>
@@ -2096,24 +2312,62 @@ function Row({ label, value, last }: any) {
 /*  iOS Shell                                                          */
 /* ------------------------------------------------------------------ */
 
-function Shell({ children }: any) {
+function Shell({ children, mood }: any) {
+  const tint = mood || C.accent;
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", color: C.text }}>
+    <div style={{
+      background: `linear-gradient(180deg, #FAFAFC 0%, ${C.bg} 55%, #EFEFF4 100%)`,
+      minHeight: "100vh",
+      color: C.text,
+      position: "relative",
+      overflow: "hidden",
+    }}>
+      {/* мягкие цветовые пятна — почти не видны, но дают глубину */}
+      <div aria-hidden style={{
+        position: "fixed", top: "-18%", left: "-22%",
+        width: 460, height: 460, borderRadius: "50%",
+        background: tint, opacity: 0.13, filter: "blur(120px)",
+        transition: "background 900ms ease", pointerEvents: "none",
+      }} />
+      <div aria-hidden style={{
+        position: "fixed", bottom: "-20%", right: "-18%",
+        width: 420, height: 420, borderRadius: "50%",
+        background: tint, opacity: 0.09, filter: "blur(120px)",
+        transition: "background 900ms ease", pointerEvents: "none",
+      }} />
+
       <style>{`
         * { box-sizing: border-box; }
-        .tap:active { opacity: 0.6; transform: scale(0.98); }
+        .tap { transition: transform 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms ease, opacity 150ms ease; }
+        .tap:active { transform: scale(0.97); }
         .tap:focus-visible { outline: 2px solid ${C.accent}; outline-offset: 2px; }
         button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
         input::placeholder { color: ${C.faint}; }
         input:focus { outline: none; }
+
+        @keyframes appear {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .scene > * { opacity: 0; animation: appear .42s cubic-bezier(.2,.8,.2,1) forwards; }
+        .scene > *:nth-child(1) { animation-delay: .02s; }
+        .scene > *:nth-child(2) { animation-delay: .07s; }
+        .scene > *:nth-child(3) { animation-delay: .12s; }
+        .scene > *:nth-child(4) { animation-delay: .17s; }
+        .scene > *:nth-child(5) { animation-delay: .22s; }
+        .scene > *:nth-child(6) { animation-delay: .27s; }
+        .scene > *:nth-child(n+7) { animation-delay: .3s; }
+
         @media (prefers-reduced-motion: reduce) {
           * { transition: none !important; animation: none !important; }
+          .scene > * { opacity: 1 !important; }
         }
       `}</style>
       <div style={{
+        position: "relative",
         maxWidth: 560,
         margin: "0 auto",
-        padding: "env(safe-area-inset-top) 16px 0",
+        padding: "env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom))",
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
@@ -2212,8 +2466,16 @@ export default function Home() {
 
   const showTabs = screen === "tabs";
 
+  // атмосфера: на вопросах цикл по четырём направлениям, на результате — ведущее
+  const mood =
+    screen === "q"
+      ? POLES[ORDER[index % ORDER.length]].color
+      : (screen === "result" || screen === "tabs") && res && !res.flat
+      ? POLES[res.lead].color
+      : C.accent;
+
   return (
-    <Shell>
+    <Shell mood={mood}>
       <div ref={topRef} style={{ position: "absolute", top: 0 }} />
 
       {screen === "intro" && (
@@ -2226,6 +2488,7 @@ export default function Home() {
 
       {screen === "q" && (
         <QuestionScreen
+          key={q.id}
           q={q} index={index} answer={answers[q.id]}
           onAnswer={(v: unknown) => setAnswers((a) => ({ ...a, [q.id]: v }))}
           onBack={back} onNext={next}
@@ -2262,7 +2525,7 @@ export default function Home() {
             onClick={() => { setScreen("tabs"); setTab("chapters"); }}
             style={{ width: "100%", background: "none", border: "none", color: C.dim, fontFamily: SANS, fontSize: 15, padding: "16px 0", marginTop: 8 }}
           >
-            Пропустить — продолжить без сохранения
+            Не сейчас — результат не сохранится
           </button>
         </div>
       )}
