@@ -8,16 +8,18 @@
 
 html {
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: #191714;
-  color: #ede8df;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  background: #F2F2F7;
+  color: #1C1C1E;
+  font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   min-height: 100dvh;
 }
 
-input, button {
+input,
+button {
   font: inherit;
 }
 
@@ -26,10 +28,16 @@ button {
 }
 
 input::placeholder {
-  color: #6e675e;
+  color: #AEAEB2;
 }
 
 input:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }
