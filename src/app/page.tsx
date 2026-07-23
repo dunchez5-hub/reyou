@@ -491,7 +491,7 @@ const Eyebrow = ({ children, color }) => (
       fontSize: 11,
       letterSpacing: "0.18em",
       textTransform: "uppercase",
-      color: color || C.faint,
+      color: color || C.dim,
     }}
   >
     {children}
@@ -556,9 +556,21 @@ function Button({ children, onClick, disabled, variant = "solid" }: any) {
 /*  Экран: вступление                                                  */
 /* ------------------------------------------------------------------ */
 
-function Intro({ onStart }) {
+function Intro({ onStart, user, onProfile }: any) {
   return (
     <div style={{ paddingTop: 56 }}>
+      {user && (
+        <button
+          className="tap"
+          onClick={onProfile}
+          style={{
+            background: "none", border: "none", padding: "0 0 20px",
+            color: C.accent, fontFamily: SANS, fontSize: 15, fontWeight: 500,
+          }}
+        >
+          {user.email} · профиль
+        </button>
+      )}
       <Eyebrow>Глава первая</Eyebrow>
       <h1 style={{
         fontFamily: SERIF, fontSize: 40, lineHeight: 1.08,
@@ -569,13 +581,17 @@ function Intro({ onStart }) {
         тянет
       </h1>
 
-      <div style={{ margin: "32px 0 14px" }}>
-        <MaterialBand values={{ L: 25, S: 25, M: 25, O: 25 }} feather={9.5} height={72} />
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 28 }}>
+      <div style={{ display: "flex", gap: 8, margin: "28px 0 28px" }}>
         {ORDER.map((p) => (
-          <div key={p} style={{ fontFamily: MONO, fontSize: 11, color: C.faint, letterSpacing: "0.1em" }}>
-            {POLES[p].letter}
+          <div key={p} style={{
+            flex: 1, padding: "10px 4px", borderRadius: 12,
+            background: POLES[p].color + "18",
+            border: `1.5px solid ${POLES[p].color}40`,
+            textAlign: "center" as const,
+          }}>
+            <div style={{ width: 8, height: 8, borderRadius: 4, background: POLES[p].color, margin: "0 auto 6px" }} />
+            <div style={{ fontFamily: SANS, fontSize: 12, fontWeight: 600, color: POLES[p].color }}>{POLES[p].letter}</div>
+            <div style={{ fontFamily: SANS, fontSize: 10, color: C.dim, marginTop: 2 }}>{POLES[p].name}</div>
           </div>
         ))}
       </div>
@@ -653,13 +669,19 @@ function QuestionScreen({ q, index, answer, onAnswer, onBack, onNext }: any) {
         </p>
       )}
 
-      <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div
+        role={q.kind === "single" ? "radiogroup" : undefined}
+        aria-label={q.kind === "single" ? q.text : undefined}
+        style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 10 }}
+      >
         {q.kind === "single" &&
-          q.options.map((o) => {
+          q.options.map((o: any) => {
             const active = answer === o.id;
             return (
               <button
                 key={o.id}
+                role="radio"
+                aria-checked={active}
                 className="tap"
                 style={optionStyle(active)}
                 onMouseDown={() => setPressed(active)}
@@ -739,6 +761,8 @@ function RankQuestion({ q, answer, onAnswer }: any) {
         return (
           <button
             key={item.id}
+            aria-pressed={active}
+            aria-label={active ? `${item.label}, выбрано на месте ${pos + 1}` : item.label}
             className="tap"
             onClick={() => toggle(item.id)}
             style={{
@@ -859,7 +883,7 @@ function DistributeQuestion({ q, answer, onAnswer }: any) {
 }
 
 const stepBtn = (enabled: boolean): React.CSSProperties => ({
-  width: 36, height: 36, flexShrink: 0, borderRadius: 10,
+  width: 44, height: 44, flexShrink: 0, borderRadius: 12,
   border: `1.5px solid ${enabled ? C.accent : C.faint}`,
   background: enabled ? C.accentDim : "transparent",
   color: enabled ? C.accent : C.faint,
@@ -872,12 +896,15 @@ const stepBtn = (enabled: boolean): React.CSSProperties => ({
 function ScaleQuestion({ answer, onAnswer }: any) {
   return (
     <>
-      <div style={{ display: "flex", gap: 8 }}>
+      <div role="radiogroup" aria-label="Насколько это про тебя" style={{ display: "flex", gap: 8 }}>
         {[1, 2, 3, 4, 5].map((n) => {
           const active = answer === n;
           return (
             <button
               key={n}
+              role="radio"
+              aria-checked={active}
+              aria-label={`${n} из 5`}
               className="tap"
               onClick={() => onAnswer(n)}
               style={{
@@ -1001,6 +1028,9 @@ function Detail({ label, text }: any) {
 
 function Result({ res, onNext, onRestart, saved, onBack }: any) {
   const [details, setDetails] = useState(false);
+  const isDebug =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("debug") === "1";
   const lead = POLES[res.lead];
   const second = POLES[res.second];
   const strongSecond = res.pct[res.second] >= 25;
@@ -1034,8 +1064,25 @@ function Result({ res, onNext, onRestart, saved, onBack }: any) {
       )}
       <Eyebrow>Глава 1 пройдена · первый замер</Eyebrow>
 
-      <div style={{ margin: "22px 0 12px" }}>
-        <MaterialBand values={res.pct} feather={res.H} height={76} animate />
+      <div style={{ display: "flex", gap: 8, margin: "20px 0 16px" }}>
+        {res.ranked.map((p: string, i: number) => (
+          <div key={p} style={{
+            flex: i === 0 ? 2 : 1,
+            padding: "12px 4px",
+            borderRadius: 12,
+            background: POLES[p].color + (i === 0 ? "20" : "10"),
+            border: `1.5px solid ${POLES[p].color}${i === 0 ? "60" : "30"}`,
+            textAlign: "center" as const,
+            transition: "flex 600ms ease",
+          }}>
+            <div style={{ fontFamily: SANS, fontSize: 13, fontWeight: 700, color: POLES[p].color }}>
+              {POLES[p].letter}
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: POLES[p].color, opacity: 0.8, marginTop: 2 }}>
+              {Math.round(res.pct[p])}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div style={{ marginBottom: 26 }}>
@@ -1216,6 +1263,7 @@ function Result({ res, onNext, onRestart, saved, onBack }: any) {
         {onBack ? "Вернуться в профиль" : saved ? "Открыть профиль" : "Сохранить результат"}
       </Button>
 
+      {isDebug && (
       <button
         className="tap"
         onClick={() => setDetails(!details)}
@@ -1223,7 +1271,7 @@ function Result({ res, onNext, onRestart, saved, onBack }: any) {
           marginTop: 18,
           background: "transparent",
           border: "none",
-          color: C.faint,
+          color: C.dim,
           fontFamily: MONO,
           fontSize: 11,
           letterSpacing: "0.15em",
@@ -1234,8 +1282,9 @@ function Result({ res, onNext, onRestart, saved, onBack }: any) {
       >
         {details ? "скрыть расчёт" : "как это посчиталось"}
       </button>
+      )}
 
-      {details && (
+      {isDebug && details && (
         <div
           style={{
             marginTop: 12,
@@ -1312,8 +1361,18 @@ function Map({ res, done, onOpenResult, onStart }: any) {
         Одна глава из шести пройдена. Остальное пока закрыто.
       </p>
 
-      <div style={{ marginBottom: 30 }}>
-        <MaterialBand values={res.pct} feather={res.H} height={40} />
+      <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
+        {res && ORDER.map((p: string) => (
+          <div key={p} style={{
+            flex: 1, padding: "8px 4px", borderRadius: 10,
+            background: POLES[p].color + "15",
+            textAlign: "center" as const,
+          }}>
+            <div style={{ fontFamily: SANS, fontSize: 11, fontWeight: 700, color: POLES[p].color }}>
+              {POLES[p].letter} {Math.round(res.pct[p])}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1639,8 +1698,9 @@ function TabBar({ tab, onTab }: any) {
         position: "sticky",
         bottom: 0,
         marginTop: 32,
-        background: "rgba(19,17,16,0.92)",
-        backdropFilter: "blur(12px)",
+        background: "rgba(255,255,255,0.82)",
+        backdropFilter: "blur(20px) saturate(180%)",
+        WebkitBackdropFilter: "blur(20px) saturate(180%)",
         borderTop: `1px solid ${C.line}`,
         display: "flex",
         padding: "8px 0 max(8px, env(safe-area-inset-bottom))",
@@ -1657,7 +1717,7 @@ function TabBar({ tab, onTab }: any) {
               flex: 1,
               background: "transparent",
               border: "none",
-              color: active ? C.accent : C.faint,
+              color: active ? C.accent : C.dim,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -1805,13 +1865,13 @@ function ProgressRing({ percent }: any) {
   const len = 2 * Math.PI * r;
   return (
     <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
-      <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="5" />
+      <circle cx="36" cy="36" r={r} fill="none" stroke={C.bgInset} strokeWidth="5" />
       <circle
         cx="36"
         cy="36"
         r={r}
         fill="none"
-        stroke={C.text}
+        stroke={C.accent}
         strokeWidth="5"
         strokeLinecap="round"
         strokeDasharray={`${(len * percent) / 100} ${len}`}
@@ -1822,7 +1882,7 @@ function ProgressRing({ percent }: any) {
         y="41"
         textAnchor="middle"
         fill={C.text}
-        style={{ fontFamily: MONO, fontSize: 15 }}
+        style={{ fontFamily: SANS, fontSize: 15, fontWeight: 600 }}
       >
         {percent}%
       </text>
@@ -1844,7 +1904,7 @@ function Profile({ state, res, onOpenResult, onEdit, onReset, onSignOut }: any) 
       <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 26 }}>
         <ProgressRing percent={done ? 8 : 0} />
         <div style={{ minWidth: 0 }}>
-          <h2 style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.15, fontWeight: 400, margin: 0 }}>
+          <h2 style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.15, fontWeight: 700, margin: 0, color: C.text }}>
             {p?.name ? p.name : "Твой профиль"}
           </h2>
           <p style={{ fontFamily: SANS, fontSize: 14, color: C.dim, margin: "6px 0 0" }}>
@@ -1855,13 +1915,19 @@ function Profile({ state, res, onOpenResult, onEdit, onReset, onSignOut }: any) 
 
       {done && res && (
         <>
-          <div style={{ marginBottom: 8 }}>
-            <MaterialBand values={res.pct} feather={res.H} height={44} />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 22 }}>
-            {ORDER.map((k) => (
-              <div key={k} style={{ fontFamily: MONO, fontSize: 11, color: C.faint, letterSpacing: "0.1em" }}>
-                {POLES[k].letter} {Math.round(res.pct[k])}
+          <div style={{ display: "flex", gap: 6, marginBottom: 22 }}>
+            {ORDER.map((k: string) => (
+              <div key={k} style={{
+                flex: 1, padding: "10px 4px", borderRadius: 12,
+                background: POLES[k].color + "15",
+                textAlign: "center" as const,
+              }}>
+                <div style={{ fontFamily: SANS, fontSize: 11, fontWeight: 600, color: POLES[k].color }}>
+                  {POLES[k].letter}
+                </div>
+                <div style={{ fontFamily: SANS, fontSize: 15, fontWeight: 700, color: POLES[k].color, marginTop: 2 }}>
+                  {Math.round(res.pct[k])}
+                </div>
               </div>
             ))}
           </div>
@@ -1871,8 +1937,9 @@ function Profile({ state, res, onOpenResult, onEdit, onReset, onSignOut }: any) 
             onClick={onOpenResult}
             style={{
               width: "100%",
-              textAlign: "left",
-              background: C.surface,
+              textAlign: "left" as const,
+              background: C.bgCard,
+              boxShadow: C.shadow,
               border: `1px solid ${C.line}`,
               borderLeft: `3px solid ${lead.color}`,
               borderRadius: 16,
@@ -1958,32 +2025,34 @@ function Profile({ state, res, onOpenResult, onEdit, onReset, onSignOut }: any) 
         </Card>
       </div>
 
-      <button
-        className="tap"
-        onClick={onSignOut}
-        style={{
-          marginTop: 14,
-          background: "transparent",
-          border: "none",
-          color: C.faint,
-          fontFamily: MONO,
-          fontSize: 11,
-          letterSpacing: "0.15em",
-          textTransform: "uppercase" as const,
-          cursor: "pointer",
-          padding: "8px 0",
-        }}
-      >
-        выйти из аккаунта
-      </button>
+      <div style={{ marginTop: 24 }}>
+        <button
+          className="tap"
+          onClick={onSignOut}
+          style={{
+            width: "100%",
+            minHeight: 54,
+            borderRadius: 14,
+            border: "none",
+            background: C.bgCard,
+            boxShadow: C.shadow,
+            color: C.poleL,
+            fontFamily: SANS,
+            fontSize: 17,
+            fontWeight: 500,
+          }}
+        >
+          Выйти из аккаунта
+        </button>
+      </div>
       <button
         className="tap"
         onClick={onReset}
         style={{
-          marginTop: 22,
+          marginTop: 16,
           background: "transparent",
           border: "none",
-          color: C.faint,
+          color: C.dim,
           fontFamily: MONO,
           fontSize: 11,
           letterSpacing: "0.15em",
@@ -2044,7 +2113,7 @@ function Shell({ children }: any) {
       <div style={{
         maxWidth: 560,
         margin: "0 auto",
-        padding: "0 16px",
+        padding: "env(safe-area-inset-top) 16px 0",
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
@@ -2072,6 +2141,26 @@ export default function Home() {
       setTab("me");
     }
   }, [ready, user, state.ch1]);
+
+  // Когда сессия закончилась — полностью возвращаемся на старт
+  useEffect(() => {
+    if (ready && !user) {
+      setAnswers({});
+      setIndex(0);
+      setTab("chapters");
+      setFromProfile(false);
+      setScreen("intro");
+    }
+  }, [ready, user]);
+
+  const handleSignOut = useCallback(async () => {
+    await signOut();
+    setAnswers({});
+    setIndex(0);
+    setTab("chapters");
+    setFromProfile(false);
+    setScreen("intro");
+  }, [signOut]);
 
   useEffect(() => {
     if (topRef.current) topRef.current.scrollIntoView({ block: "start" });
@@ -2128,7 +2217,11 @@ export default function Home() {
       <div ref={topRef} style={{ position: "absolute", top: 0 }} />
 
       {screen === "intro" && (
-        <Intro onStart={() => { setIndex(0); setScreen("q"); }} />
+        <Intro
+          onStart={() => { setIndex(0); setScreen("q"); }}
+          user={user}
+          onProfile={() => { setScreen("tabs"); setTab("me"); }}
+        />
       )}
 
       {screen === "q" && (
@@ -2201,7 +2294,7 @@ export default function Home() {
               onOpenResult={() => { setFromProfile(true); setScreen("result"); }}
               onEdit={() => setScreen("save")}
               onReset={() => { setAnswers({}); setIndex(0); setTab("chapters"); setScreen("intro"); }}
-              onSignOut={signOut}
+              onSignOut={handleSignOut}
             />
           )}
           <TabBar tab={tab} onTab={setTab} />
