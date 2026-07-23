@@ -569,6 +569,79 @@ function Button({ children, onClick, disabled, variant = "solid" }: any) {
 /*  Экран: вступление                                                  */
 /* ------------------------------------------------------------------ */
 
+
+/* ------------------------------------------------------------------ */
+/*  Приветственный экран                                               */
+/* ------------------------------------------------------------------ */
+
+function Welcome({ onStart, onLogin, user, onProfile }: any) {
+  return (
+    <div className="scene" style={{
+      paddingTop: 72, flex: 1, display: "flex", flexDirection: "column",
+    }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 36 }}>
+        {ORDER.map((p: string) => (
+          <div key={p} style={{
+            width: 34, height: 34, borderRadius: 12,
+            background: `linear-gradient(150deg, ${POLES[p].color} 0%, ${POLES[p].color}AA 100%)`,
+            boxShadow: `0 6px 18px ${POLES[p].color}55`,
+            display: "grid", placeItems: "center",
+            fontFamily: SERIF, fontSize: 16, fontWeight: 700, color: "#fff",
+          }}>
+            {POLES[p].letter}
+          </div>
+        ))}
+      </div>
+
+      <h1 style={{
+        fontFamily: SERIF, fontSize: 44, lineHeight: 1.05, fontWeight: 700,
+        letterSpacing: "-0.03em", color: C.text, margin: "0 0 16px",
+      }}>
+        Твоё поле
+      </h1>
+
+      <p style={{
+        fontFamily: SANS, fontSize: 18, lineHeight: 1.5,
+        color: C.textSec, margin: "0 0 12px",
+      }}>
+        Шесть коротких глав, которые складываются в портрет: с чем тебе работать,
+        что у тебя уже получается и как ты меняешься со временем.
+      </p>
+
+      <p style={{
+        fontFamily: SANS, fontSize: 15.5, lineHeight: 1.55,
+        color: C.dim, margin: "0 0 auto",
+      }}>
+        Ни одного вопроса про профессии. Первая глава — 11 ситуаций, около трёх минут.
+      </p>
+
+      <div style={{ marginTop: 40 }}>
+        {user ? (
+          <>
+            <Button onClick={onProfile}>Открыть мой профиль</Button>
+            <div style={{ marginTop: 12 }}>
+              <Button variant="ghost" onClick={onStart}>Пройти главу 1 заново</Button>
+            </div>
+            <p style={{
+              fontFamily: SANS, fontSize: 13.5, color: C.dim,
+              textAlign: "center" as const, margin: "16px 0 0",
+            }}>
+              Вошёл как {user.email}
+            </p>
+          </>
+        ) : (
+          <>
+            <Button onClick={onStart}>Начать тест</Button>
+            <div style={{ marginTop: 12 }}>
+              <Button variant="ghost" onClick={onLogin}>У меня уже есть аккаунт</Button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Intro({ onStart, user, onProfile }: any) {
   return (
     <div className="scene" style={{ paddingTop: 56 }}>
@@ -1742,8 +1815,8 @@ function GoogleButton({ onClick, loading }: any) {
   );
 }
 
-function AuthGate() {
-  const { signIn, signUp } = useAuth();
+function AuthGate({ context = "save" }: any) {
+  const { signIn, signUp, signInWithGoogle } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -1753,11 +1826,12 @@ function AuthGate() {
 
   const handleGoogle = async () => {
     setLoading(true);
-    const { supabase } = await import("@/lib/supabase");
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: "https://reyou-olive.vercel.app" },
-    });
+    try {
+      await signInWithGoogle();
+    } catch (e) {
+      setLoading(false);
+      setError("Не получилось открыть Google. Попробуй через почту.");
+    }
   };
 
   const submit = async () => {
@@ -1779,13 +1853,15 @@ function AuthGate() {
   return (
     <div className="scene" style={{ paddingTop: 40, paddingBottom: 40 }}>
       <h2 style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 700, margin: "0 0 10px", color: C.text, letterSpacing: "-0.02em" }}>
-        Сохранить результат
+        {context === "login" ? "С возвращением" : "Сохранить результат"}
       </h2>
       <p style={{ fontFamily: SANS, fontSize: 16, color: C.textSec, margin: "0 0 20px", lineHeight: 1.55 }}>
-        Аккаунт нужен для одного: чтобы твои главы копились в одном месте.
+        {context === "login"
+          ? "Войди — и профиль со всеми пройденными главами подтянется сюда."
+          : "Аккаунт нужен для одного: чтобы твои главы копились в одном месте."}
       </p>
 
-      <div style={{ ...GLASS, borderRadius: 20, padding: 20, marginBottom: 24 }}>
+      <div style={{ ...GLASS, borderRadius: 20, padding: 20, marginBottom: 24, display: context === "login" ? "none" : "block" }}>
         {[
           ["Результат не потеряется", "Без аккаунта он живёт только в этой вкладке. Закроешь — и главу придётся проходить заново."],
           ["Главы складываются", "Впереди ещё пять. Каждая уточняет предыдущую, но только если они привязаны к одному профилю."],
@@ -2106,9 +2182,9 @@ function ProgressRing({ percent }: any) {
   );
 }
 
-function Profile({ state, res, onOpenResult, onEdit, onReset, onSignOut }: any) {
+function Profile({ state, res, onOpenResult, onEdit, onReset, onSignOut, done: doneProp, user }: any) {
   const p = state.profile;
-  const done = !!state.ch1;
+  const done = doneProp ?? !!state.ch1;
   const lead = res && done ? POLES[res.lead] : null;
   const date = state.ch1?.date ? new Date(state.ch1.date) : null;
   const dateLabel = date
@@ -2121,7 +2197,7 @@ function Profile({ state, res, onOpenResult, onEdit, onReset, onSignOut }: any) 
         <ProgressRing percent={done ? 8 : 0} />
         <div style={{ minWidth: 0 }}>
           <h2 style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.15, fontWeight: 700, margin: 0, color: C.text }}>
-            {p?.name ? p.name : "Твой профиль"}
+            {p?.name ? p.name : user?.email ? user.email.split("@")[0] : "Твой профиль"}
           </h2>
           <p style={{ fontFamily: SANS, fontSize: 14, color: C.dim, margin: "6px 0 0" }}>
             {done ? "Изучен на 8%. Одна глава из шести." : "Пока пусто. Первая глава всё начнёт."}
@@ -2379,60 +2455,155 @@ function Shell({ children, mood }: any) {
 }
 
 
+/* ------------------------------------------------------------------ */
+/*  Черновик прохождения                                               */
+/*  Google-вход уводит со страницы и возвращает обратно — вся память   */
+/*  React при этом теряется. Поэтому ответы кладём в localStorage      */
+/*  и достаём после возврата.                                          */
+/* ------------------------------------------------------------------ */
+
+const DRAFT_KEY = "pole:draft:ch1";
+
+function saveDraft(answers: Record<string, unknown>, startedAt: number) {
+  try {
+    if (!answers || Object.keys(answers).length === 0) return;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ answers, startedAt }));
+  } catch {}
+}
+
+function readDraft(): { answers: Record<string, unknown>; startedAt: number } | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.answers || Object.keys(parsed.answers).length === 0) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {}
+}
+
+
 export default function Home() {
-  const { ready, user, state, saveProfile, saveChapter, signOut } = useAuth();
-  const [screen, setScreen] = useState("intro");
+  const {
+    ready, user, state,
+    saveProfile, saveChapter, recordCompletion, signOut,
+  } = useAuth();
+
+  const [screen, setScreen] = useState("welcome");
   const [tab, setTab] = useState("chapters");
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [fromProfile, setFromProfile] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
 
+  const startedAtRef = useRef<number>(Date.now());
+  const bootedRef = useRef(false);
+  const recordedRef = useRef(false);
+  const savingRef = useRef(false);
+
+  /* --- восстановление черновика при первом рендере ---------------- */
   useEffect(() => {
-    if (ready && user && state.ch1) {
+    if (bootedRef.current) return;
+    bootedRef.current = true;
+    const draft = readDraft();
+    if (draft) {
+      setAnswers(draft.answers);
+      startedAtRef.current = draft.startedAt || Date.now();
+    }
+  }, []);
+
+  /* --- черновик пишем при каждом изменении ответов ---------------- */
+  useEffect(() => {
+    if (Object.keys(answers).length > 0) {
+      saveDraft(answers, startedAtRef.current);
+    }
+  }, [answers]);
+
+  const res = useMemo(() => computeResult(answers), [answers]);
+
+  const complete = useMemo(
+    () => QUESTIONS.every((qq: any) => isComplete(qq, answers[qq.id])),
+    [answers]
+  );
+
+  /* --- вернулись после входа: досохраняем незаписанное ------------ */
+  useEffect(() => {
+    if (!ready || !user) return;
+    if (state.ch1) return;        // уже есть в базе
+    if (!complete) return;         // глава не пройдена
+    if (savingRef.current) return;
+
+    savingRef.current = true;
+    (async () => {
+      const measurements = ORDER.map((pole: string) => ({
+        pole,
+        kind: "ipsative" as string,
+        value: res.pct[pole],
+        weight: res.sumW,
+      }));
+      await saveChapter("ch1", answers, measurements);
+      clearDraft();
+      setScreen("tabs");
+      setTab("me");
+      savingRef.current = false;
+    })();
+  }, [ready, user, state.ch1, complete, answers, res, saveChapter]);
+
+  /* --- есть сохранённая глава: подтягиваем и открываем профиль ----- */
+  useEffect(() => {
+    if (ready && user && state.ch1 && !complete) {
       setAnswers(state.ch1.answers as Record<string, unknown>);
       setScreen("tabs");
       setTab("me");
     }
-  }, [ready, user, state.ch1]);
-
-  // Когда сессия закончилась — полностью возвращаемся на старт
-  useEffect(() => {
-    if (ready && !user) {
-      setAnswers({});
-      setIndex(0);
-      setTab("chapters");
-      setFromProfile(false);
-      setScreen("intro");
-    }
-  }, [ready, user]);
-
-  const handleSignOut = useCallback(async () => {
-    await signOut();
-    setAnswers({});
-    setIndex(0);
-    setTab("chapters");
-    setFromProfile(false);
-    setScreen("intro");
-  }, [signOut]);
+  }, [ready, user, state.ch1, complete]);
 
   useEffect(() => {
     if (topRef.current) topRef.current.scrollIntoView({ block: "start" });
   }, [screen, index, tab]);
 
-  const res = useMemo(() => computeResult(answers), [answers]);
   const q = QUESTIONS[index];
 
+  /* --- завершение главы ------------------------------------------- */
   const finish = useCallback(async () => {
+    const secs = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
+
+    // статистика — пишем всегда, даже без аккаунта
+    if (!recordedRef.current) {
+      recordedRef.current = true;
+      recordCompletion({
+        chapter: "ch1",
+        leadPole: res.flat ? null : res.lead,
+        scores: ORDER.reduce((acc: any, p: string) => {
+          acc[p] = Math.round(res.pct[p] * 10) / 10;
+          return acc;
+        }, {}),
+        isFlat: res.flat,
+        hasGap: !!res.controlGap,
+        secondsSpent: secs,
+        savedAccount: !!user,
+      });
+    }
+
     if (user) {
-      const measurements = ORDER.map((pole) => ({
-        pole, kind: "ipsative" as string,
-        value: res.pct[pole], weight: res.sumW,
+      const measurements = ORDER.map((pole: string) => ({
+        pole,
+        kind: "ipsative" as string,
+        value: res.pct[pole],
+        weight: res.sumW,
       }));
       await saveChapter("ch1", answers, measurements);
+      clearDraft();
     }
     setScreen("result");
-  }, [answers, res, saveChapter, user]);
+  }, [answers, res, saveChapter, recordCompletion, user]);
 
   const next = () => {
     if (index === QUESTIONS.length - 1) finish();
@@ -2440,15 +2611,31 @@ export default function Home() {
   };
 
   const back = () => {
-    if (index === 0) setScreen("intro");
+    if (index === 0) setScreen("welcome");
     else setIndex((i) => i - 1);
   };
 
   const restart = () => {
+    clearDraft();
+    recordedRef.current = false;
+    startedAtRef.current = Date.now();
     setAnswers({});
     setIndex(0);
     setScreen("intro");
   };
+
+  const handleSignOut = useCallback(async () => {
+    clearDraft();
+    recordedRef.current = false;
+    savingRef.current = false;
+    startedAtRef.current = Date.now();
+    await signOut();
+    setAnswers({});
+    setIndex(0);
+    setTab("chapters");
+    setFromProfile(false);
+    setScreen("welcome");
+  }, [signOut]);
 
   if (!ready) {
     return (
@@ -2466,17 +2653,45 @@ export default function Home() {
 
   const showTabs = screen === "tabs";
 
-  // атмосфера: на вопросах цикл по четырём направлениям, на результате — ведущее
   const mood =
     screen === "q"
       ? POLES[ORDER[index % ORDER.length]].color
-      : (screen === "result" || screen === "tabs") && res && !res.flat
+      : (screen === "result" || screen === "tabs") && res && !res.flat && complete
       ? POLES[res.lead].color
       : C.accent;
 
   return (
     <Shell mood={mood}>
       <div ref={topRef} style={{ position: "absolute", top: 0 }} />
+
+      {screen === "welcome" && (
+        <Welcome
+          user={user}
+          onStart={() => {
+            clearDraft();
+            recordedRef.current = false;
+            startedAtRef.current = Date.now();
+            setAnswers({});
+            setIndex(0);
+            setScreen("intro");
+          }}
+          onLogin={() => setScreen("login")}
+          onProfile={() => { setScreen("tabs"); setTab("me"); }}
+        />
+      )}
+
+      {screen === "login" && (
+        <div style={{ paddingTop: 20 }}>
+          <button
+            className="tap"
+            onClick={() => setScreen("welcome")}
+            style={{ background: "none", border: "none", color: C.accent, fontFamily: SANS, fontSize: 17, padding: "0 0 8px" }}
+          >
+            ← Назад
+          </button>
+          <AuthGate context="login" />
+        </div>
+      )}
 
       {screen === "intro" && (
         <Intro
@@ -2519,7 +2734,7 @@ export default function Home() {
           >
             ← Назад
           </button>
-          <AuthGate />
+          <AuthGate context="save" />
           <button
             className="tap"
             onClick={() => { setScreen("tabs"); setTab("chapters"); }}
@@ -2546,17 +2761,24 @@ export default function Home() {
         <>
           {tab === "chapters" && (
             <Map
-              res={res} done={!!state.ch1}
+              res={res} done={!!state.ch1 || complete}
               onOpenResult={() => { setFromProfile(true); setScreen("result"); }}
-              onStart={() => { setAnswers({}); setIndex(0); setScreen("q"); }}
+              onStart={() => {
+                clearDraft();
+                recordedRef.current = false;
+                startedAtRef.current = Date.now();
+                setAnswers({}); setIndex(0); setScreen("q");
+              }}
             />
           )}
           {tab === "me" && (
             <Profile
               state={state} res={res}
+              done={!!state.ch1 || complete}
+              user={user}
               onOpenResult={() => { setFromProfile(true); setScreen("result"); }}
               onEdit={() => setScreen("save")}
-              onReset={() => { setAnswers({}); setIndex(0); setTab("chapters"); setScreen("intro"); }}
+              onReset={restart}
               onSignOut={handleSignOut}
             />
           )}
