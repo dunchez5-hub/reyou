@@ -26,6 +26,16 @@ import {
   flatText3,
   crossCheckText3,
 } from "@/lib/chapter3";
+import {
+  QUESTIONS4,
+  computeResult4,
+  levelOf4,
+  TEXTS4_A,
+  TEXTS4_B,
+  QUADRANTS,
+  crossCheck4,
+  crossCheckText4,
+} from "@/lib/chapter4";
 
 /* ------------------------------------------------------------------ */
 /*  Токены                                                             */
@@ -846,11 +856,11 @@ function QuestionScreen({ q, index, total, answer, onAnswer, onBack, onNext }: a
       )}
 
       <div
-        role={q.kind === "single" ? "radiogroup" : undefined}
-        aria-label={q.kind === "single" ? q.text : undefined}
+        role={q.kind === "single" || q.kind === "single4" || q.kind === "single4ab" ? "radiogroup" : undefined}
+        aria-label={q.kind === "single" || q.kind === "single4" || q.kind === "single4ab" ? q.text : undefined}
         style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 10 }}
       >
-        {q.kind === "single" &&
+        {(q.kind === "single" || q.kind === "single4" || q.kind === "single4ab") &&
           q.options.map((o: any) => {
             const active = answer === o.id;
             return (
@@ -1853,6 +1863,48 @@ function Intro3({ onStart, user, onProfile }: any) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Экран: вступление к главе 4                                        */
+/* ------------------------------------------------------------------ */
+
+function Intro4({ onStart, user, onProfile }: any) {
+  return (
+    <div className="scene" style={{ paddingTop: 56 }}>
+      {user && (
+        <button
+          className="tap"
+          onClick={onProfile}
+          style={{
+            background: "none", border: "none", padding: "0 0 20px",
+            color: C.accent, fontFamily: SANS, fontSize: 15, fontWeight: 500,
+          }}
+        >
+          {user.email} · профиль
+        </button>
+      )}
+      <Eyebrow>Глава четвёртая · 36%</Eyebrow>
+      <h1 style={{
+        fontFamily: SERIF, fontSize: 40, lineHeight: 1.08,
+        margin: "10px 0 0", fontWeight: 700, letterSpacing: "-0.02em", color: C.text,
+      }}>
+        Как думает
+        <br />
+        твоя голова
+      </h1>
+
+      <p style={{ fontFamily: SANS, fontSize: 17, lineHeight: 1.55, color: C.textSec, margin: "28px 0 16px" }}>
+        Ты уже сказал(а), что делаешь. Теперь — как именно устроена голова, которая это делает.
+        Девять вопросов, и это самая быстрая глава во всей линейке.
+      </p>
+
+      <Button onClick={onStart}>Начать</Button>
+      <div style={{ marginTop: 16, textAlign: "center" }}>
+        <Eyebrow>9 вопросов · 2–2,5 минуты · открывает «твой способ думать»</Eyebrow>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Полоса значения — переиспользуемая версия PoleRow с явной meta      */
 /* ------------------------------------------------------------------ */
 
@@ -1986,10 +2038,158 @@ function Result3({ res3, materialLead, onNext, onRestart }: any) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Полоса континуальной шкалы (не ипсативной) — маркер + коридор H     */
+/* ------------------------------------------------------------------ */
+
+function ContinuumBar({ label, value, H, color, leftCaption, rightCaption }: any) {
+  const from = Math.max(0, value - H / 2);
+  const to = Math.min(100, value + H / 2);
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+        <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: C.text }}>{label}</span>
+        <span style={{ fontFamily: MONO, fontSize: 13, color }}>{Math.round(value)}</span>
+      </div>
+      <div style={{ position: "relative", height: 8, borderRadius: 4, background: C.bgInset }}>
+        <div style={{
+          position: "absolute", left: "35%", width: "30%", top: 0, bottom: 0,
+          background: C.faint, opacity: 0.25,
+        }} />
+        <div style={{
+          position: "absolute", left: `${from}%`, width: `${to - from}%`, top: 0, bottom: 0,
+          borderRadius: 4, background: color, opacity: 0.4,
+        }} />
+        <div style={{
+          position: "absolute", left: `calc(${value}% - 2px)`, width: 4, top: -3, bottom: -3,
+          background: color, borderRadius: 2,
+        }} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+        <Eyebrow>{leftCaption}</Eyebrow>
+        <Eyebrow>{rightCaption}</Eyebrow>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Экран: результат главы 4 — квадрант «как думает голова»             */
+/* ------------------------------------------------------------------ */
+
+function Result4({ res4, verbLead, onNext, onRestart }: any) {
+  const q = QUADRANTS[res4.quadrant];
+  const cross = verbLead ? crossCheck4(verbLead, res4.thinkType, res4.focusType) : null;
+
+  return (
+    <div className="scene" style={{ paddingTop: 28 }}>
+      <Eyebrow>Глава 4 пройдена · твой способ думать</Eyebrow>
+
+      <div style={{
+        position: "relative", marginTop: 16, marginBottom: 20, borderRadius: 24,
+        padding: "32px 24px 28px", overflow: "hidden",
+        background: `linear-gradient(160deg, ${C.accent}1F 0%, rgba(255,255,255,0.72) 70%)`,
+        border: "1px solid rgba(255,255,255,0.7)",
+        boxShadow: "0 14px 44px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
+        backdropFilter: "blur(24px) saturate(160%)",
+        WebkitBackdropFilter: "blur(24px) saturate(160%)",
+      }}>
+        <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: C.accent, marginBottom: 6 }}>
+          {q.sub}
+        </div>
+        <div style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 700, letterSpacing: "-0.025em", color: C.text, lineHeight: 1.1 }}>
+          {q.title}
+        </div>
+        <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.6, color: C.textSec, margin: "14px 0 0" }}>
+          {q.body}
+        </p>
+      </div>
+
+      <ContinuumBar
+        label="А · Тип мышления"
+        value={res4.pctA}
+        H={res4.HA}
+        color={C.poleS}
+        leftCaption="образное"
+        rightCaption="аналитическое"
+      />
+      <ContinuumBar
+        label="Б · Фокус внимания"
+        value={res4.pctB}
+        H={res4.HB}
+        color={C.poleO}
+        leftCaption="деталь"
+        rightCaption="система"
+      />
+
+      <Card style={{ borderLeft: `3px solid ${C.poleS}` }}>
+        <h3 style={{ fontFamily: SERIF, fontSize: 20, lineHeight: 1.3, fontWeight: 700, margin: "0 0 12px", color: C.text }}>
+          {TEXTS4_A[levelOf4(res4.pctA)].title}
+        </h3>
+        <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.6, color: C.textSec, margin: 0 }}>
+          {TEXTS4_A[levelOf4(res4.pctA)].body}
+        </p>
+        <Detail label="Вспомни" text={TEXTS4_A[levelOf4(res4.pctA)].memory} />
+        <Detail label="Сила" text={TEXTS4_A[levelOf4(res4.pctA)].power} />
+        <Detail label="На что смотреть" text={TEXTS4_A[levelOf4(res4.pctA)].watch} />
+      </Card>
+      <div style={{ marginTop: 14 }}>
+        <Card style={{ borderLeft: `3px solid ${C.poleO}` }}>
+          <h3 style={{ fontFamily: SERIF, fontSize: 20, lineHeight: 1.3, fontWeight: 700, margin: "0 0 12px", color: C.text }}>
+            {TEXTS4_B[levelOf4(res4.pctB)].title}
+          </h3>
+          <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.6, color: C.textSec, margin: 0 }}>
+            {TEXTS4_B[levelOf4(res4.pctB)].body}
+          </p>
+          <Detail label="Вспомни" text={TEXTS4_B[levelOf4(res4.pctB)].memory} />
+          <Detail label="Сила" text={TEXTS4_B[levelOf4(res4.pctB)].power} />
+          <Detail label="На что смотреть" text={TEXTS4_B[levelOf4(res4.pctB)].watch} />
+        </Card>
+      </div>
+
+      {cross && (
+        <div style={{ marginTop: 14 }}>
+          <Card style={{ background: "transparent", borderStyle: "dashed" }}>
+            <Eyebrow>Сверка с главой 3</Eyebrow>
+            <h3 style={{ fontFamily: SERIF, fontSize: 20, lineHeight: 1.3, fontWeight: 700, margin: "10px 0 10px", color: C.text }}>
+              {crossCheckText4(verbLead, cross.matched).title}
+            </h3>
+            <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.6, color: C.dim, margin: 0, whiteSpace: "pre-line" }}>
+              {crossCheckText4(verbLead, cross.matched).body}
+            </p>
+          </Card>
+        </div>
+      )}
+
+      <div style={{
+        marginTop: 26, padding: "22px 20px", border: `1px solid ${C.line}`, borderRadius: 16,
+        display: "flex", alignItems: "center", gap: 18,
+      }}>
+        <div style={{ fontFamily: SERIF, fontSize: 44, lineHeight: 1 }}>10</div>
+        <div>
+          <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.45 }}>направлений в фокусе</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: C.faint, letterSpacing: "0.1em", marginTop: 4 }}>
+            было 14 → стало 10
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <Button onClick={onNext}>Открыть «твой способ думать»</Button>
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <Button variant="ghost" onClick={onRestart}>
+          Пройти главу 4 заново
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Экран: карта глав                                                  */
 /* ------------------------------------------------------------------ */
 
-function buildChapters(hasCh1: boolean, hasCh2: boolean, hasCh3: boolean) {
+function buildChapters(hasCh1: boolean, hasCh2: boolean, hasCh3: boolean, hasCh4: boolean) {
   return [
     hasCh1
       ? { state: "done", title: "Твоё поле", note: hasCh2 ? "обновлено · данные из двух глав" : "открыто · 24 направления в фокусе" }
@@ -2004,18 +2204,22 @@ function buildChapters(hasCh1: boolean, hasCh2: boolean, hasCh3: boolean) {
       : hasCh3
       ? { state: "done", title: "Твоё действие", note: "открыто · «ты — тот, кто … в …»" }
       : { state: "locked", title: "Глава 3. Глагол, который тебе идёт" },
-    hasCh3
+    hasCh3 && !hasCh4
       ? { state: "next", title: "Глава 4. Как думает твоя голова", note: "9 вопросов, 2 минуты", sub: "проверит, совпадает ли твой стиль мышления с твоим глаголом" }
+      : hasCh4
+      ? { state: "done", title: "Твой способ думать", note: "открыто" }
       : { state: "locked", title: "Глава 4. Как думает твоя голова" },
-    { state: "locked", title: "Что тебя выключает", at: "откроется на 67%" },
+    hasCh4
+      ? { state: "next", title: "Глава 5. Что тебя заряжает", note: "10 вопросов, 3 минуты", sub: "проверит гипотезу на прочность" }
+      : { state: "locked", title: "Что тебя выключает", at: "откроется на 67%" },
     { state: "hidden", title: "Раздел ещё не назван", at: "откроется на 83%" },
   ];
 }
 
-function Map({ res, res2, res3, done, done2, done3, onOpenResult, onStart, onStart2, onStart3, onOpenResult2, onOpenResult3 }: any) {
-  const chapters = buildChapters(done, done2, done3);
-  const focus = done3 ? 14 : done2 ? 18 : done ? (res && res.flat ? 33 : res.pct[res.lead] >= 35 ? 24 : 28) : 40;
-  const percentLabel = done3 ? "27" : done2 ? "17" : done ? "8" : "0";
+function Map({ res, res2, res3, res4, done, done2, done3, done4, onOpenResult, onStart, onStart2, onStart3, onStart4, onOpenResult2, onOpenResult3, onOpenResult4 }: any) {
+  const chapters = buildChapters(done, done2, done3, done4);
+  const focus = done4 ? 10 : done3 ? 14 : done2 ? 18 : done ? (res && res.flat ? 33 : res.pct[res.lead] >= 35 ? 24 : 28) : 40;
+  const percentLabel = done4 ? "36" : done3 ? "27" : done2 ? "17" : done ? "8" : "0";
 
   return (
     <div className="scene" style={{ paddingTop: 36 }}>
@@ -2029,10 +2233,12 @@ function Map({ res, res2, res3, done, done2, done3, onOpenResult, onStart, onSta
           margin: "12px 0 6px",
         }}
       >
-        {done3 ? "Твоё действие открыто" : done2 ? "Фундамент подтверждён" : done ? "Твоё поле открыто" : "Ничего ещё не пройдено"}
+        {done4 ? "Твой способ думать открыт" : done3 ? "Твоё действие открыто" : done2 ? "Фундамент подтверждён" : done ? "Твоё поле открыто" : "Ничего ещё не пройдено"}
       </h2>
       <p style={{ fontFamily: SANS, fontSize: 15, color: C.dim, margin: "0 0 24px" }}>
-        {done3
+        {done4
+          ? "Четыре главы из шести пройдены. Остальное пока закрыто."
+          : done3
           ? "Три главы из шести пройдены. Остальное пока закрыто."
           : done2
           ? "Две главы из шести пройдены. Остальное пока закрыто."
@@ -2065,9 +2271,11 @@ function Map({ res, res2, res3, done, done2, done3, onOpenResult, onStart, onSta
                 if (ch.state === "next" && i === 0) onStart();
                 else if (ch.state === "next" && i === 1) onStart2 && onStart2();
                 else if (ch.state === "next" && i === 2) onStart3 && onStart3();
+                else if (ch.state === "next" && i === 3) onStart4 && onStart4();
                 else if (ch.state === "done" && i === 0) onOpenResult();
                 else if (ch.state === "done" && i === 1) onOpenResult2 && onOpenResult2();
                 else if (ch.state === "done" && i === 2) onOpenResult3 && onOpenResult3();
+                else if (ch.state === "done" && i === 3) onOpenResult4 && onOpenResult4();
               }}
               style={{
                 background: ch.state === "next" ? C.surfaceUp : C.surface,
@@ -2598,7 +2806,7 @@ function ProgressRing({ percent }: any) {
   );
 }
 
-function Profile({ state, res, res3, combined, onOpenResult, onOpenResult2, onOpenResult3, onEdit, onReset, onSignOut, done: doneProp, done2, done3, user }: any) {
+function Profile({ state, res, res3, res4, combined, onOpenResult, onOpenResult2, onOpenResult3, onOpenResult4, onEdit, onReset, onSignOut, done: doneProp, done2, done3, done4, user }: any) {
   const p = state.profile;
   const done = doneProp ?? !!state.ch1;
   const lead = combined && (done || done2) ? POLES[combined.lead] : null;
@@ -2614,17 +2822,23 @@ function Profile({ state, res, res3, combined, onOpenResult, onOpenResult2, onOp
   const dateLabel3 = date3
     ? date3.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
     : "";
+  const date4 = state.ch4?.date ? new Date(state.ch4.date) : null;
+  const dateLabel4 = date4
+    ? date4.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
+    : "";
 
   return (
     <div className="scene" style={{ paddingTop: 36 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 26 }}>
-        <ProgressRing percent={done3 ? 27 : done2 ? 17 : done ? 8 : 0} />
+        <ProgressRing percent={done4 ? 36 : done3 ? 27 : done2 ? 17 : done ? 8 : 0} />
         <div style={{ minWidth: 0 }}>
           <h2 style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.15, fontWeight: 700, margin: 0, color: C.text }}>
             {p?.name ? p.name : user?.email ? user.email.split("@")[0] : "Твой профиль"}
           </h2>
           <p style={{ fontFamily: SANS, fontSize: 14, color: C.dim, margin: "6px 0 0" }}>
-            {done3
+            {done4
+              ? "Изучен на 36%. Четыре главы из шести."
+              : done3
               ? "Изучен на 27%. Три главы из шести."
               : done2
               ? "Изучен на 17%. Две главы из шести."
@@ -2742,6 +2956,34 @@ function Profile({ state, res, res3, combined, onOpenResult, onOpenResult2, onOp
             </button>
           )}
 
+          {done4 && res4 && (
+            <button
+              className="tap"
+              onClick={onOpenResult4}
+              style={{
+                width: "100%",
+                textAlign: "left" as const,
+                background: C.bgCard,
+                boxShadow: C.shadow,
+                border: `1px solid ${C.line}`,
+                borderLeft: `3px solid ${C.accent}`,
+                borderRadius: 16,
+                padding: 20,
+                cursor: "pointer",
+                color: C.text,
+                marginTop: 12,
+              }}
+            >
+              <Eyebrow>Твой способ думать · открыто</Eyebrow>
+              <div style={{ fontFamily: SERIF, fontSize: 21, lineHeight: 1.25, margin: "10px 0 10px" }}>
+                {QUADRANTS[res4.quadrant].title}
+              </div>
+              <div style={{ fontFamily: SANS, fontSize: 13.5, color: C.faint }}>
+                Смотреть квадрант целиком →
+              </div>
+            </button>
+          )}
+
           <div style={{ marginTop: 26 }}>
             <Eyebrow>Хроника</Eyebrow>
             <div style={{ marginTop: 14, borderLeft: `1px solid ${C.line}`, paddingLeft: 18 }}>
@@ -2805,6 +3047,27 @@ function Profile({ state, res, res3, combined, onOpenResult, onOpenResult2, onOp
                     Третий замер: действие — {res3.flat ? "пока не определилось" : VERB_META[res3.lead].name.toLowerCase()}
                   </div>
                 </div>
+              ) : null}
+              {done4 && res4 ? (
+                <div style={{ position: "relative", paddingBottom: 20 }}>
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: -23,
+                      top: 5,
+                      width: 9,
+                      height: 9,
+                      borderRadius: 5,
+                      background: C.accent,
+                    }}
+                  />
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: C.faint, letterSpacing: "0.1em" }}>
+                    {dateLabel4}
+                  </div>
+                  <div style={{ fontFamily: SANS, fontSize: 15, marginTop: 5, lineHeight: 1.5 }}>
+                    Четвёртый замер: способ думать — {QUADRANTS[res4.quadrant].title.toLowerCase()}
+                  </div>
+                </div>
               ) : (
                 <div style={{ position: "relative", opacity: 0.45 }}>
                   <span
@@ -2819,7 +3082,7 @@ function Profile({ state, res, res3, combined, onOpenResult, onOpenResult2, onOp
                     }}
                   />
                   <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.5 }}>
-                    Следующая отметка появится после {done2 ? "главы 3" : "главы 2"}
+                    Следующая отметка появится после {done3 ? "главы 4" : done2 ? "главы 3" : "главы 2"}
                   </div>
                 </div>
               )}
@@ -3027,16 +3290,20 @@ export default function Home() {
   const [answers2, setAnswers2] = useState<Record<string, unknown>>({});
   const [index3, setIndex3] = useState(0);
   const [answers3, setAnswers3] = useState<Record<string, unknown>>({});
+  const [index4, setIndex4] = useState(0);
+  const [answers4, setAnswers4] = useState<Record<string, unknown>>({});
   const [fromProfile, setFromProfile] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
 
   const startedAtRef = useRef<number>(Date.now());
   const startedAt2Ref = useRef<number>(Date.now());
   const startedAt3Ref = useRef<number>(Date.now());
+  const startedAt4Ref = useRef<number>(Date.now());
   const bootedRef = useRef(false);
   const recordedRef = useRef(false);
   const recorded2Ref = useRef(false);
   const recorded3Ref = useRef(false);
+  const recorded4Ref = useRef(false);
   const savingRef = useRef(false);
 
   /* --- восстановление черновика при первом рендере ---------------- */
@@ -3057,6 +3324,11 @@ export default function Home() {
     if (draft3) {
       setAnswers3(draft3.answers);
       startedAt3Ref.current = draft3.startedAt || Date.now();
+    }
+    const draft4 = readDraft("ch4");
+    if (draft4) {
+      setAnswers4(draft4.answers);
+      startedAt4Ref.current = draft4.startedAt || Date.now();
     }
   }, []);
 
@@ -3079,9 +3351,16 @@ export default function Home() {
     }
   }, [answers3]);
 
+  useEffect(() => {
+    if (Object.keys(answers4).length > 0) {
+      saveDraft("ch4", answers4, startedAt4Ref.current);
+    }
+  }, [answers4]);
+
   const res = useMemo(() => computeResult(answers), [answers]);
   const res2 = useMemo(() => computeResult2(answers2), [answers2]);
   const res3 = useMemo(() => computeResult3(answers3), [answers3]);
+  const res4 = useMemo(() => computeResult4(answers4), [answers4]);
 
   const complete = useMemo(
     () => QUESTIONS.every((qq: any) => isComplete(qq, answers[qq.id])),
@@ -3094,6 +3373,10 @@ export default function Home() {
   const complete3 = useMemo(
     () => QUESTIONS3.every((qq: any) => isComplete(qq, answers3[qq.id])),
     [answers3]
+  );
+  const complete4 = useMemo(
+    () => QUESTIONS4.every((qq: any) => answers4[qq.id] != null),
+    [answers4]
   );
 
   // резонанс: сравниваем ведущий полюс главы 1 (из зафиксированных
@@ -3163,20 +3446,28 @@ export default function Home() {
     }
   }, [ready, user, state.ch3, complete3]);
 
+  /* --- есть сохранённая глава 4: подтягиваем ----------------------- */
   useEffect(() => {
-    if (ready && user && (state.ch1 || state.ch2 || state.ch3) && screen === "welcome") {
+    if (ready && user && state.ch4 && !complete4) {
+      setAnswers4(state.ch4.answers as Record<string, unknown>);
+    }
+  }, [ready, user, state.ch4, complete4]);
+
+  useEffect(() => {
+    if (ready && user && (state.ch1 || state.ch2 || state.ch3 || state.ch4) && screen === "welcome") {
       setScreen("tabs");
       setTab("me");
     }
-  }, [ready, user, state.ch1, state.ch2, state.ch3]);
+  }, [ready, user, state.ch1, state.ch2, state.ch3, state.ch4]);
 
   useEffect(() => {
     if (topRef.current) topRef.current.scrollIntoView({ block: "start" });
-  }, [screen, index, index2, index3, tab]);
+  }, [screen, index, index2, index3, index4, tab]);
 
   const q = QUESTIONS[index];
   const q2 = QUESTIONS2[index2];
   const q3 = QUESTIONS3[index3];
+  const q4 = QUESTIONS4[index4];
 
   /* --- завершение главы 1 ------------------------------------------ */
   const finish = useCallback(async () => {
@@ -3294,6 +3585,35 @@ export default function Home() {
     setScreen("result3");
   }, [answers3, res3, combined, saveChapter, recordCompletion, user]);
 
+  /* --- завершение главы 4 ------------------------------------------ */
+  const finish4 = useCallback(async () => {
+    const secs = Math.max(1, Math.round((Date.now() - startedAt4Ref.current) / 1000));
+    const cross4 = res3.flat ? null : crossCheck4(res3.lead, res4.thinkType, res4.focusType);
+
+    if (!recorded4Ref.current) {
+      recorded4Ref.current = true;
+      recordCompletion({
+        chapter: "ch4",
+        leadPole: res4.quadrant,
+        scores: { A: Math.round(res4.pctA * 10) / 10, B: Math.round(res4.pctB * 10) / 10 },
+        isFlat: false,
+        hasGap: cross4 ? !cross4.matched : false,
+        secondsSpent: secs,
+        savedAccount: !!user,
+      });
+    }
+
+    if (user) {
+      const measurements = [
+        { pole: "A", kind: "continuous" as string, value: res4.pctA, weight: res4.wA },
+        { pole: "B", kind: "continuous" as string, value: res4.pctB, weight: res4.wB },
+      ];
+      await saveChapter("ch4", answers4, measurements);
+      clearDraft("ch4");
+    }
+    setScreen("result4");
+  }, [answers4, res3, res4, saveChapter, recordCompletion, user]);
+
   const next = () => {
     if (index === QUESTIONS.length - 1) finish();
     else setIndex((i) => i + 1);
@@ -3324,6 +3644,16 @@ export default function Home() {
     else setIndex3((i) => i - 1);
   };
 
+  const next4 = () => {
+    if (index4 === QUESTIONS4.length - 1) finish4();
+    else setIndex4((i) => i + 1);
+  };
+
+  const back4 = () => {
+    if (index4 === 0) setScreen("tabs");
+    else setIndex4((i) => i - 1);
+  };
+
   const restart = () => {
     clearDraft("ch1");
     recordedRef.current = false;
@@ -3351,24 +3681,38 @@ export default function Home() {
     setScreen("intro3");
   };
 
+  const restart4 = () => {
+    clearDraft("ch4");
+    recorded4Ref.current = false;
+    startedAt4Ref.current = Date.now();
+    setAnswers4({});
+    setIndex4(0);
+    setScreen("intro4");
+  };
+
   const handleSignOut = useCallback(async () => {
     clearDraft("ch1");
     clearDraft("ch2");
     clearDraft("ch3");
+    clearDraft("ch4");
     recordedRef.current = false;
     recorded2Ref.current = false;
     recorded3Ref.current = false;
+    recorded4Ref.current = false;
     savingRef.current = false;
     startedAtRef.current = Date.now();
     startedAt2Ref.current = Date.now();
     startedAt3Ref.current = Date.now();
+    startedAt4Ref.current = Date.now();
     await signOut();
     setAnswers({});
     setAnswers2({});
     setAnswers3({});
+    setAnswers4({});
     setIndex(0);
     setIndex2(0);
     setIndex3(0);
+    setIndex4(0);
     setTab("chapters");
     setFromProfile(false);
     setScreen("welcome");
@@ -3392,6 +3736,7 @@ export default function Home() {
   const hasCh1 = !!state.ch1 || complete;
   const hasCh2 = !!state.ch2 || complete2;
   const hasCh3 = !!state.ch3 || complete3;
+  const hasCh4 = !!state.ch4 || complete4;
 
   const mood =
     screen === "q"
@@ -3400,6 +3745,8 @@ export default function Home() {
       ? POLES[ORDER[index2 % ORDER.length]].color
       : screen === "q3"
       ? VERB_META[VERBS[index3 % VERBS.length]].color
+      : screen === "q4"
+      ? C.accent
       : (screen === "result" || screen === "tabs") && res && !res.flat && complete
       ? POLES[res.lead].color
       : C.accent;
@@ -3461,6 +3808,14 @@ export default function Home() {
         />
       )}
 
+      {screen === "intro4" && (
+        <Intro4
+          onStart={() => { setIndex4(0); setScreen("q4"); }}
+          user={user}
+          onProfile={() => { setScreen("tabs"); setTab("me"); }}
+        />
+      )}
+
       {screen === "q" && (
         <QuestionScreen
           key={q.id}
@@ -3485,6 +3840,15 @@ export default function Home() {
           q={q3} index={index3} total={QUESTIONS3.length} answer={answers3[q3.id]}
           onAnswer={(v: unknown) => setAnswers3((a) => ({ ...a, [q3.id]: v }))}
           onBack={back3} onNext={next3}
+        />
+      )}
+
+      {screen === "q4" && (
+        <QuestionScreen
+          key={q4.id}
+          q={q4} index={index4} total={QUESTIONS4.length} answer={answers4[q4.id]}
+          onAnswer={(v: unknown) => setAnswers4((a) => ({ ...a, [q4.id]: v }))}
+          onBack={back4} onNext={next4}
         />
       )}
 
@@ -3519,6 +3883,15 @@ export default function Home() {
           materialLead={combined ? combined.lead : null}
           onNext={() => { setFromProfile(false); setScreen("tabs"); setTab("me"); }}
           onRestart={restart3}
+        />
+      )}
+
+      {screen === "result4" && (
+        <Result4
+          res4={res4}
+          verbLead={res3.flat ? null : res3.lead}
+          onNext={() => { setFromProfile(false); setScreen("tabs"); setTab("me"); }}
+          onRestart={restart4}
         />
       )}
 
@@ -3561,12 +3934,15 @@ export default function Home() {
               res={hasCh1 ? res : null}
               res2={hasCh2 ? res2 : null}
               res3={hasCh3 ? res3 : null}
+              res4={hasCh4 ? res4 : null}
               done={hasCh1}
               done2={hasCh2}
               done3={hasCh3}
+              done4={hasCh4}
               onOpenResult={() => { setFromProfile(true); setScreen("result"); }}
               onOpenResult2={() => { setFromProfile(true); setScreen("result2"); }}
               onOpenResult3={() => { setFromProfile(true); setScreen("result3"); }}
+              onOpenResult4={() => { setFromProfile(true); setScreen("result4"); }}
               onStart={() => {
                 clearDraft("ch1");
                 recordedRef.current = false;
@@ -3585,18 +3961,26 @@ export default function Home() {
                 startedAt3Ref.current = Date.now();
                 setAnswers3({}); setIndex3(0); setScreen("intro3");
               }}
+              onStart4={() => {
+                clearDraft("ch4");
+                recorded4Ref.current = false;
+                startedAt4Ref.current = Date.now();
+                setAnswers4({}); setIndex4(0); setScreen("intro4");
+              }}
             />
           )}
           {tab === "me" && (
             <Profile
-              state={state} res={res} res3={hasCh3 ? res3 : null} combined={combined}
+              state={state} res={res} res3={hasCh3 ? res3 : null} res4={hasCh4 ? res4 : null} combined={combined}
               done={hasCh1}
               done2={hasCh2}
               done3={hasCh3}
+              done4={hasCh4}
               user={user}
               onOpenResult={() => { setFromProfile(true); setScreen("result"); }}
               onOpenResult2={() => { setFromProfile(true); setScreen("result2"); }}
               onOpenResult3={() => { setFromProfile(true); setScreen("result3"); }}
+              onOpenResult4={() => { setFromProfile(true); setScreen("result4"); }}
               onEdit={() => setScreen("save")}
               onReset={restart}
               onSignOut={handleSignOut}
