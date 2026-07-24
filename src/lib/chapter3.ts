@@ -172,6 +172,28 @@ export const IPSATIVE_IDS3 = [
 ];
 
 /* ------------------------------------------------------------------ */
+/*  Объединённый профиль глагола (глава 3 + повторный сигнал главы 7)   */
+/* ------------------------------------------------------------------ */
+
+export function combineVerbProfile(measurements: any[]) {
+  const acc = {};
+  VERBS.forEach((v) => (acc[v] = { sw: 0, swv: 0 }));
+  measurements.forEach((m) => {
+    if (m.kind !== "ipsative") return;
+    if (!acc[m.pole]) return;
+    acc[m.pole].sw += m.weight;
+    acc[m.pole].swv += m.weight * m.value;
+  });
+  const pct = {};
+  VERBS.forEach((v) => (pct[v] = acc[v].sw > 0 ? acc[v].swv / acc[v].sw : 0));
+  const sumW = VERBS.reduce((s, v) => Math.max(s, acc[v].sw), 0);
+  let H = sumW > 0 ? (25 / Math.sqrt(sumW)) * Math.sqrt(6 / 4) : 25;
+  H = Math.max(4, Math.min(30, H));
+  const ranked = [...VERBS].sort((a, b) => pct[b] - pct[a]);
+  return { pct, H, sumW, ranked, lead: ranked[0] };
+}
+
+/* ------------------------------------------------------------------ */
 /*  Скоринг главы 3                                                    */
 /* ------------------------------------------------------------------ */
 
