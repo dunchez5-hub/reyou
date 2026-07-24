@@ -26,16 +26,19 @@ interface ChapterResult {
   date: string;
 }
 
-export interface AppState {
-  profile: Profile | null;
-  ch1: ChapterResult | null;
-}
-
 export interface Measurement {
   pole: string;
   kind: string;
   value: number;
   weight: number;
+  created_at?: string;
+}
+
+export interface AppState {
+  profile: Profile | null;
+  ch1: ChapterResult | null;
+  ch2: ChapterResult | null;
+  measurements: Measurement[];
 }
 
 export interface CompletionStats {
@@ -69,6 +72,8 @@ interface AuthCtx {
 const Ctx = createContext<AuthCtx>(null!);
 export const useAuth = () => useContext(Ctx);
 
+const CHAPTER_IDS = ["ch1", "ch2"];
+
 /* ------------------------------------------------------------------ */
 /*  Провайдер                                                          */
 /* ------------------------------------------------------------------ */
@@ -76,7 +81,12 @@ export const useAuth = () => useContext(Ctx);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [state, setState] = useState<AppState>({ profile: null, ch1: null });
+  const [state, setState] = useState<AppState>({
+    profile: null,
+    ch1: null,
+    ch2: null,
+    measurements: [],
+  });
 
   // защищает от гонки: во время OAuth-редиректа сессия на миг null
   const settledRef = useRef(false);
@@ -90,25 +100,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq("id", uid)
         .maybeSingle();
 
-      const { data: ans } = await supabase
-        .from("answers")
-        .select("answers, created_at")
+      // последняя запись ответов по каждой известной главе
+      const chapterResults: Record<string, ChapterResult | null> = {
+        ch1: null,
+        ch2: null,
+      };
+      for (const chapter of CHAPTER_IDS) {
+        const { data: ans } = await supabase
+          .from("answers")
+          .select("answers, created_at")
+          .eq("user_id", uid)
+          .eq("chapter", chapter)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (ans) {
+          chapterResults[chapter] = {
+            answers: ans.answers as Record<string, unknown>,
+            date: ans.created_at,
+          };
+        }
+      }
+
+      // все замеры (баллы + веса), нужны для резонанса и объединённого профиля.
+      // Замеры пишутся один раз при прохождении и не пересчитываются задним
+      // числом — поэтому даже если формулы поменяются, история не поедет.
+      const { data: meas } = await supabase
+        .from("measurements")
+        .select("chapter, pole, kind, value, weight, created_at")
         .eq("user_id", uid)
-        .eq("chapter", "ch1")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: true });
 
       setState({
         profile: prof
           ? { name: prof.name, age: prof.age, gender: prof.gender }
           : null,
-        ch1: ans
-          ? {
-              answers: ans.answers as Record<string, unknown>,
-              date: ans.created_at,
-            }
-          : null,
+        ch1: chapterResults.ch1,
+        ch2: chapterResults.ch2,
+        measurements: (meas as Measurement[]) || [],
       });
     } catch (e) {
       console.error("loadForUser failed", e);
@@ -142,7 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else if (event === "SIGNED_OUT") {
         // чистим состояние ТОЛЬКО при явном выходе,
         // а не на промежуточных null во время редиректа
-        setState({ profile: null, ch1: null });
+        setState({ profile: null, ch1: null, ch2: null, measurements: [] });
         setReady(true);
       }
     });
@@ -182,7 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-    setState({ profile: null, ch1: null });
+    setState({ profile: null, ch1: null, ch2: null, measurements: [] });
   }, []);
 
   /* --- сохранить профиль ------------------------------------------ */
@@ -218,6 +247,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (ansErr) console.error("saveChapter/answers", ansErr);
 
+      const nowIso = new Date().toISOString();
+
       if (measurements.length > 0) {
         const { error: mErr } = await supabase.from("measurements").insert(
           measurements.map((m) => ({
@@ -247,10 +278,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           );
       }
 
-      if (chapter === "ch1") {
+      if (CHAPTER_IDS.includes(chapter)) {
         setState((s) => ({
           ...s,
-          ch1: { answers, date: new Date().toISOString() },
+          [chapter]: { answers, date: nowIso },
+          measurements: [
+            ...s.measurements,
+            ...measurements.map((m) => ({ ...m, chapter, created_at: nowIso })),
+          ],
         }));
       }
     },
