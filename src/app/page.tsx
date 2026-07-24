@@ -1083,7 +1083,7 @@ function DistributeQuestion({ q, answer, onAnswer }: any) {
       </div>
 
       {q.items.map((item) => {
-        const meta = POLES[item.pole] || VERB_META[item.pole];
+        const meta = POLES[item.pole] || VERB_META[item.pole] || DRIVER_META[item.pole];
         const color = meta.color;
         const v = val[item.pole] || 0;
         return (
