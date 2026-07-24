@@ -15,6 +15,17 @@ import {
   gapText,
   blindSpotText,
 } from "@/lib/chapter2";
+import {
+  VERBS,
+  VERB_META,
+  QUESTIONS3,
+  computeResult3,
+  crossCheck3,
+  TEXTS3,
+  linkText3,
+  flatText3,
+  crossCheckText3,
+} from "@/lib/chapter3";
 
 /* ------------------------------------------------------------------ */
 /*  Токены                                                             */
@@ -905,8 +916,10 @@ function QuestionScreen({ q, index, total, answer, onAnswer, onBack, onNext }: a
 function isComplete(q, a) {
   if (a == null) return false;
   if (q.kind === "rank") return a.length === q.items.length;
-  if (q.kind === "distribute")
-    return ORDER.reduce((s, p) => s + (a[p] || 0), 0) === q.total;
+  if (q.kind === "distribute") {
+    const poles = q.items.map((i) => i.pole);
+    return poles.reduce((s, p) => s + (a[p] || 0), 0) === q.total;
+  }
   return true;
 }
 
@@ -965,8 +978,9 @@ function RankQuestion({ q, answer, onAnswer }: any) {
 }
 
 function DistributeQuestion({ q, answer, onAnswer }: any) {
-  const val = answer || { L: 0, S: 0, M: 0, O: 0 };
-  const used = ORDER.reduce((s, p) => s + (val[p] || 0), 0);
+  const poles = q.items.map((i) => i.pole);
+  const val = answer || poles.reduce((acc, p) => ({ ...acc, [p]: 0 }), {});
+  const used = poles.reduce((s, p) => s + (val[p] || 0), 0);
   const left = q.total - used;
 
   const set = (pole, delta) => {
@@ -994,7 +1008,8 @@ function DistributeQuestion({ q, answer, onAnswer }: any) {
       </div>
 
       {q.items.map((item) => {
-        const color = POLES[item.pole].color;
+        const meta = POLES[item.pole] || VERB_META[item.pole];
+        const color = meta.color;
         const v = val[item.pole] || 0;
         return (
           <div
@@ -1793,10 +1808,188 @@ function Result2({ res1, res2, resonance, onNext, onRestart }: any) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Экран: вступление к главе 3                                        */
+/* ------------------------------------------------------------------ */
+
+function Intro3({ onStart, user, onProfile }: any) {
+  return (
+    <div className="scene" style={{ paddingTop: 56 }}>
+      {user && (
+        <button
+          className="tap"
+          onClick={onProfile}
+          style={{
+            background: "none", border: "none", padding: "0 0 20px",
+            color: C.accent, fontFamily: SANS, fontSize: 15, fontWeight: 500,
+          }}
+        >
+          {user.email} · профиль
+        </button>
+      )}
+      <Eyebrow>Глава третья · 27%</Eyebrow>
+      <h1 style={{
+        fontFamily: SERIF, fontSize: 40, lineHeight: 1.08,
+        margin: "10px 0 0", fontWeight: 700, letterSpacing: "-0.02em", color: C.text,
+      }}>
+        Глагол, который
+        <br />
+        тебе идёт
+      </h1>
+
+      <p style={{ fontFamily: SANS, fontSize: 17, lineHeight: 1.55, color: C.textSec, margin: "28px 0 16px" }}>
+        Предыдущие две главы показали, с чем тебе работать. Эта — что именно ты делаешь.
+        Одно и то же поле «люди» — это и переговорщик, и терапевт, и рекрутер. Разводит их глагол.
+      </p>
+      <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.6, color: C.dim, margin: "0 0 32px" }}>
+        Часть вопросов — жёсткий выбор из двух. Выбрать надо одно, даже если хочется оба.
+      </p>
+
+      <Button onClick={onStart}>Начать</Button>
+      <div style={{ marginTop: 16, textAlign: "center" }}>
+        <Eyebrow>12 вопросов · 3 минуты · открывает «твоё действие»</Eyebrow>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Полоса значения — переиспользуемая версия PoleRow с явной meta      */
+/* ------------------------------------------------------------------ */
+
+function VerbRow({ meta, value, H }: any) {
+  const from = Math.max(0, value - H / 2);
+  const to = Math.min(100, value + H / 2);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0" }}>
+      <span
+        style={{
+          width: 26, height: 26, borderRadius: 8, background: meta.color, color: "#fff",
+          display: "grid", placeItems: "center", fontFamily: SERIF, fontSize: 14, flexShrink: 0,
+        }}
+      >
+        {meta.letter}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: SANS, fontSize: 14, marginBottom: 6 }}>{meta.name}</div>
+        <div style={{ position: "relative", height: 6, borderRadius: 3, background: C.faint }}>
+          <div style={{
+            position: "absolute", left: `${from}%`, width: `${to - from}%`, top: 0, bottom: 0,
+            borderRadius: 3, background: meta.color, opacity: 0.45,
+          }} />
+          <div style={{
+            position: "absolute", left: `calc(${value}% - 1px)`, width: 2, top: -3, bottom: -3,
+            background: meta.color, borderRadius: 2,
+          }} />
+        </div>
+      </div>
+      <span style={{ fontFamily: MONO, fontSize: 15, width: 34, textAlign: "right", color: C.text }}>
+        {Math.round(value)}
+      </span>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Экран: результат главы 3 — глагол + связка «поле + глагол»          */
+/* ------------------------------------------------------------------ */
+
+function Result3({ res3, materialLead, onNext, onRestart }: any) {
+  const cross = crossCheck3(materialLead, res3.lead);
+  const verbMeta = VERB_META[res3.lead];
+
+  return (
+    <div className="scene" style={{ paddingTop: 28 }}>
+      <Eyebrow>Глава 3 пройдена · твоё действие</Eyebrow>
+
+      <div style={{ display: "flex", gap: 8, margin: "20px 0 16px", flexWrap: "wrap" as const }}>
+        {res3.ranked.map((v: string) => (
+          <div key={v} style={{
+            flex: "1 1 30%",
+            padding: "10px 4px",
+            borderRadius: 12,
+            background: VERB_META[v].color + "18",
+            border: `1.5px solid ${VERB_META[v].color}40`,
+            textAlign: "center" as const,
+          }}>
+            <div style={{ fontFamily: SANS, fontSize: 12, fontWeight: 700, color: VERB_META[v].color }}>
+              {VERB_META[v].letter}
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: VERB_META[v].color, opacity: 0.85 }}>
+              {Math.round(res3.pct[v])}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginBottom: 22 }}>
+        {res3.ranked.map((v: string) => (
+          <VerbRow key={v} meta={VERB_META[v]} value={res3.pct[v]} H={res3.H} />
+        ))}
+      </div>
+
+      {res3.flat ? (
+        <TextBlock accent={C.dim} t={flatText3()} />
+      ) : (
+        <>
+          <h2 style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.25, fontWeight: 700, margin: "6px 0 16px", color: C.text }}>
+            {materialLead ? linkText3(materialLead, res3.lead).title : TEXTS3[res3.lead].title}
+          </h2>
+          <Card style={{ borderLeft: `3px solid ${verbMeta.color}` }}>
+            <p style={{ fontFamily: SANS, fontSize: 16, lineHeight: 1.6, color: C.textSec, margin: 0 }}>
+              {materialLead ? linkText3(materialLead, res3.lead).body : TEXTS3[res3.lead].body}
+            </p>
+            <Detail label="Вспомни" text={TEXTS3[res3.lead].memory} />
+            <Detail label="Обратная сторона" text={TEXTS3[res3.lead].watch} />
+            <Detail label="Куда с этим" text={materialLead ? linkText3(materialLead, res3.lead).focus : TEXTS3[res3.lead].where} />
+            <Detail label="Где сгоришь" text={TEXTS3[res3.lead].burnout} />
+          </Card>
+        </>
+      )}
+
+      {cross && (
+        <div style={{ marginTop: 14 }}>
+          <Card style={{ background: "transparent", borderStyle: "dashed" }}>
+            <Eyebrow>Перекрёстная проверка</Eyebrow>
+            <h3 style={{ fontFamily: SERIF, fontSize: 20, lineHeight: 1.3, fontWeight: 700, margin: "10px 0 10px", color: C.text }}>
+              {crossCheckText3(res3.lead).title}
+            </h3>
+            <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.6, color: C.dim, margin: 0, whiteSpace: "pre-line" }}>
+              {crossCheckText3(res3.lead).body}
+            </p>
+          </Card>
+        </div>
+      )}
+
+      <div style={{
+        marginTop: 26, padding: "22px 20px", border: `1px solid ${C.line}`, borderRadius: 16,
+        display: "flex", alignItems: "center", gap: 18,
+      }}>
+        <div style={{ fontFamily: SERIF, fontSize: 44, lineHeight: 1 }}>14</div>
+        <div>
+          <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.45 }}>направлений в фокусе</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: C.faint, letterSpacing: "0.1em", marginTop: 4 }}>
+            было 18 → стало 14
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <Button onClick={onNext}>Открыть «твоё действие»</Button>
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <Button variant="ghost" onClick={onRestart}>
+          Пройти главу 3 заново
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Экран: карта глав                                                  */
 /* ------------------------------------------------------------------ */
 
-function buildChapters(hasCh1: boolean, hasCh2: boolean) {
+function buildChapters(hasCh1: boolean, hasCh2: boolean, hasCh3: boolean) {
   return [
     hasCh1
       ? { state: "done", title: "Твоё поле", note: hasCh2 ? "обновлено · данные из двух глав" : "открыто · 24 направления в фокусе" }
@@ -1806,19 +1999,23 @@ function buildChapters(hasCh1: boolean, hasCh2: boolean) {
       : hasCh2
       ? { state: "done", title: "Твой проверенный фундамент", note: "открыто" }
       : { state: "locked", title: "Глава 2. За что тебя уже хвалили" },
-    hasCh2
+    hasCh2 && !hasCh3
       ? { state: "next", title: "Глава 3. Глагол, который тебе идёт", note: "12 вопросов, 3 минуты", sub: "создавать, чинить, исследовать, организовывать — что твоё?" }
+      : hasCh3
+      ? { state: "done", title: "Твоё действие", note: "открыто · «ты — тот, кто … в …»" }
       : { state: "locked", title: "Глава 3. Глагол, который тебе идёт" },
-    { state: "locked", title: "Глава 4. Как думает твоя голова" },
+    hasCh3
+      ? { state: "next", title: "Глава 4. Как думает твоя голова", note: "9 вопросов, 2 минуты", sub: "проверит, совпадает ли твой стиль мышления с твоим глаголом" }
+      : { state: "locked", title: "Глава 4. Как думает твоя голова" },
     { state: "locked", title: "Что тебя выключает", at: "откроется на 67%" },
     { state: "hidden", title: "Раздел ещё не назван", at: "откроется на 83%" },
   ];
 }
 
-function Map({ res, res2, done, done2, onOpenResult, onStart, onStart2, onOpenResult2 }: any) {
-  const chapters = buildChapters(done, done2);
-  const focus = done2 ? 18 : done ? (res && res.flat ? 33 : res.pct[res.lead] >= 35 ? 24 : 28) : 40;
-  const percentLabel = done2 ? "17" : done ? "8" : "0";
+function Map({ res, res2, res3, done, done2, done3, onOpenResult, onStart, onStart2, onStart3, onOpenResult2, onOpenResult3 }: any) {
+  const chapters = buildChapters(done, done2, done3);
+  const focus = done3 ? 14 : done2 ? 18 : done ? (res && res.flat ? 33 : res.pct[res.lead] >= 35 ? 24 : 28) : 40;
+  const percentLabel = done3 ? "27" : done2 ? "17" : done ? "8" : "0";
 
   return (
     <div className="scene" style={{ paddingTop: 36 }}>
@@ -1832,10 +2029,12 @@ function Map({ res, res2, done, done2, onOpenResult, onStart, onStart2, onOpenRe
           margin: "12px 0 6px",
         }}
       >
-        {done2 ? "Фундамент подтверждён" : done ? "Твоё поле открыто" : "Ничего ещё не пройдено"}
+        {done3 ? "Твоё действие открыто" : done2 ? "Фундамент подтверждён" : done ? "Твоё поле открыто" : "Ничего ещё не пройдено"}
       </h2>
       <p style={{ fontFamily: SANS, fontSize: 15, color: C.dim, margin: "0 0 24px" }}>
-        {done2
+        {done3
+          ? "Три главы из шести пройдены. Остальное пока закрыто."
+          : done2
           ? "Две главы из шести пройдены. Остальное пока закрыто."
           : done
           ? "Одна глава из шести пройдена. Остальное пока закрыто."
@@ -1865,8 +2064,10 @@ function Map({ res, res2, done, done2, onOpenResult, onStart, onStart2, onOpenRe
               onClick={() => {
                 if (ch.state === "next" && i === 0) onStart();
                 else if (ch.state === "next" && i === 1) onStart2 && onStart2();
+                else if (ch.state === "next" && i === 2) onStart3 && onStart3();
                 else if (ch.state === "done" && i === 0) onOpenResult();
                 else if (ch.state === "done" && i === 1) onOpenResult2 && onOpenResult2();
+                else if (ch.state === "done" && i === 2) onOpenResult3 && onOpenResult3();
               }}
               style={{
                 background: ch.state === "next" ? C.surfaceUp : C.surface,
@@ -2397,7 +2598,7 @@ function ProgressRing({ percent }: any) {
   );
 }
 
-function Profile({ state, res, combined, onOpenResult, onOpenResult2, onEdit, onReset, onSignOut, done: doneProp, done2, user }: any) {
+function Profile({ state, res, res3, combined, onOpenResult, onOpenResult2, onOpenResult3, onEdit, onReset, onSignOut, done: doneProp, done2, done3, user }: any) {
   const p = state.profile;
   const done = doneProp ?? !!state.ch1;
   const lead = combined && (done || done2) ? POLES[combined.lead] : null;
@@ -2409,17 +2610,23 @@ function Profile({ state, res, combined, onOpenResult, onOpenResult2, onEdit, on
   const dateLabel2 = date2
     ? date2.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
     : "";
+  const date3 = state.ch3?.date ? new Date(state.ch3.date) : null;
+  const dateLabel3 = date3
+    ? date3.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
+    : "";
 
   return (
     <div className="scene" style={{ paddingTop: 36 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 26 }}>
-        <ProgressRing percent={done2 ? 17 : done ? 8 : 0} />
+        <ProgressRing percent={done3 ? 27 : done2 ? 17 : done ? 8 : 0} />
         <div style={{ minWidth: 0 }}>
           <h2 style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.15, fontWeight: 700, margin: 0, color: C.text }}>
             {p?.name ? p.name : user?.email ? user.email.split("@")[0] : "Твой профиль"}
           </h2>
           <p style={{ fontFamily: SANS, fontSize: 14, color: C.dim, margin: "6px 0 0" }}>
-            {done2
+            {done3
+              ? "Изучен на 27%. Три главы из шести."
+              : done2
               ? "Изучен на 17%. Две главы из шести."
               : done
               ? "Изучен на 8%. Одна глава из шести."
@@ -2507,6 +2714,34 @@ function Profile({ state, res, combined, onOpenResult, onOpenResult2, onEdit, on
             </button>
           )}
 
+          {done3 && res3 && (
+            <button
+              className="tap"
+              onClick={onOpenResult3}
+              style={{
+                width: "100%",
+                textAlign: "left" as const,
+                background: C.bgCard,
+                boxShadow: C.shadow,
+                border: `1px solid ${C.line}`,
+                borderLeft: `3px solid ${VERB_META[res3.lead].color}`,
+                borderRadius: 16,
+                padding: 20,
+                cursor: "pointer",
+                color: C.text,
+                marginTop: 12,
+              }}
+            >
+              <Eyebrow>Твоё действие · открыто</Eyebrow>
+              <div style={{ fontFamily: SERIF, fontSize: 21, lineHeight: 1.25, margin: "10px 0 10px" }}>
+                {res3.flat ? "Глагол пока не определился" : `Ты — тот, кто ${VERB_META[res3.lead].name.toLowerCase()}`}
+              </div>
+              <div style={{ fontFamily: SANS, fontSize: 13.5, color: C.faint }}>
+                Смотреть разбор действия →
+              </div>
+            </button>
+          )}
+
           <div style={{ marginTop: 26 }}>
             <Eyebrow>Хроника</Eyebrow>
             <div style={{ marginTop: 14, borderLeft: `1px solid ${C.line}`, paddingLeft: 18 }}>
@@ -2549,6 +2784,27 @@ function Profile({ state, res, combined, onOpenResult, onOpenResult2, onEdit, on
                     Второй замер: фундамент — {POLES[combined.lead].name.toLowerCase()}, коридор сузился
                   </div>
                 </div>
+              ) : null}
+              {done3 && res3 ? (
+                <div style={{ position: "relative", paddingBottom: 20 }}>
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: -23,
+                      top: 5,
+                      width: 9,
+                      height: 9,
+                      borderRadius: 5,
+                      background: VERB_META[res3.lead].color,
+                    }}
+                  />
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: C.faint, letterSpacing: "0.1em" }}>
+                    {dateLabel3}
+                  </div>
+                  <div style={{ fontFamily: SANS, fontSize: 15, marginTop: 5, lineHeight: 1.5 }}>
+                    Третий замер: действие — {res3.flat ? "пока не определилось" : VERB_META[res3.lead].name.toLowerCase()}
+                  </div>
+                </div>
               ) : (
                 <div style={{ position: "relative", opacity: 0.45 }}>
                   <span
@@ -2563,7 +2819,7 @@ function Profile({ state, res, combined, onOpenResult, onOpenResult2, onEdit, on
                     }}
                   />
                   <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.5 }}>
-                    Следующая отметка появится после главы 2
+                    Следующая отметка появится после {done2 ? "главы 3" : "главы 2"}
                   </div>
                 </div>
               )}
@@ -2769,14 +3025,18 @@ export default function Home() {
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [index2, setIndex2] = useState(0);
   const [answers2, setAnswers2] = useState<Record<string, unknown>>({});
+  const [index3, setIndex3] = useState(0);
+  const [answers3, setAnswers3] = useState<Record<string, unknown>>({});
   const [fromProfile, setFromProfile] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
 
   const startedAtRef = useRef<number>(Date.now());
   const startedAt2Ref = useRef<number>(Date.now());
+  const startedAt3Ref = useRef<number>(Date.now());
   const bootedRef = useRef(false);
   const recordedRef = useRef(false);
   const recorded2Ref = useRef(false);
+  const recorded3Ref = useRef(false);
   const savingRef = useRef(false);
 
   /* --- восстановление черновика при первом рендере ---------------- */
@@ -2793,6 +3053,11 @@ export default function Home() {
       setAnswers2(draft2.answers);
       startedAt2Ref.current = draft2.startedAt || Date.now();
     }
+    const draft3 = readDraft("ch3");
+    if (draft3) {
+      setAnswers3(draft3.answers);
+      startedAt3Ref.current = draft3.startedAt || Date.now();
+    }
   }, []);
 
   /* --- черновик пишем при каждом изменении ответов ---------------- */
@@ -2808,8 +3073,15 @@ export default function Home() {
     }
   }, [answers2]);
 
+  useEffect(() => {
+    if (Object.keys(answers3).length > 0) {
+      saveDraft("ch3", answers3, startedAt3Ref.current);
+    }
+  }, [answers3]);
+
   const res = useMemo(() => computeResult(answers), [answers]);
   const res2 = useMemo(() => computeResult2(answers2), [answers2]);
+  const res3 = useMemo(() => computeResult3(answers3), [answers3]);
 
   const complete = useMemo(
     () => QUESTIONS.every((qq: any) => isComplete(qq, answers[qq.id])),
@@ -2818,6 +3090,10 @@ export default function Home() {
   const complete2 = useMemo(
     () => QUESTIONS2.every((qq: any) => isComplete2(qq, answers2[qq.id])),
     [answers2]
+  );
+  const complete3 = useMemo(
+    () => QUESTIONS3.every((qq: any) => isComplete(qq, answers3[qq.id])),
+    [answers3]
   );
 
   // резонанс: сравниваем ведущий полюс главы 1 (из зафиксированных
@@ -2880,19 +3156,27 @@ export default function Home() {
     }
   }, [ready, user, state.ch2, complete2]);
 
+  /* --- есть сохранённая глава 3: подтягиваем ----------------------- */
   useEffect(() => {
-    if (ready && user && (state.ch1 || state.ch2) && screen === "welcome") {
+    if (ready && user && state.ch3 && !complete3) {
+      setAnswers3(state.ch3.answers as Record<string, unknown>);
+    }
+  }, [ready, user, state.ch3, complete3]);
+
+  useEffect(() => {
+    if (ready && user && (state.ch1 || state.ch2 || state.ch3) && screen === "welcome") {
       setScreen("tabs");
       setTab("me");
     }
-  }, [ready, user, state.ch1, state.ch2]);
+  }, [ready, user, state.ch1, state.ch2, state.ch3]);
 
   useEffect(() => {
     if (topRef.current) topRef.current.scrollIntoView({ block: "start" });
-  }, [screen, index, index2, tab]);
+  }, [screen, index, index2, index3, tab]);
 
   const q = QUESTIONS[index];
   const q2 = QUESTIONS2[index2];
+  const q3 = QUESTIONS3[index3];
 
   /* --- завершение главы 1 ------------------------------------------ */
   const finish = useCallback(async () => {
@@ -2968,6 +3252,48 @@ export default function Home() {
     setScreen("result2");
   }, [answers2, res2, resonance, saveChapter, recordCompletion, user]);
 
+  /* --- завершение главы 3 ------------------------------------------ */
+  const finish3 = useCallback(async () => {
+    const secs = Math.max(1, Math.round((Date.now() - startedAt3Ref.current) / 1000));
+    const cross = crossCheck3(combined.lead, res3.lead);
+
+    if (!recorded3Ref.current) {
+      recorded3Ref.current = true;
+      recordCompletion({
+        chapter: "ch3",
+        leadPole: res3.flat ? null : res3.lead,
+        scores: VERBS.reduce((acc: any, v: string) => {
+          acc[v] = Math.round(res3.pct[v] * 10) / 10;
+          return acc;
+        }, {}),
+        isFlat: res3.flat,
+        hasGap: !!cross,
+        secondsSpent: secs,
+        savedAccount: !!user,
+      });
+    }
+
+    if (user) {
+      const measurements = [
+        ...VERBS.map((pole: string) => ({
+          pole,
+          kind: "ipsative" as string,
+          value: res3.pct[pole],
+          weight: res3.sumW,
+        })),
+        ...Object.entries(res3.norm).map(([pole, value]: any) => ({
+          pole,
+          kind: "normative" as string,
+          value,
+          weight: 1,
+        })),
+      ];
+      await saveChapter("ch3", answers3, measurements);
+      clearDraft("ch3");
+    }
+    setScreen("result3");
+  }, [answers3, res3, combined, saveChapter, recordCompletion, user]);
+
   const next = () => {
     if (index === QUESTIONS.length - 1) finish();
     else setIndex((i) => i + 1);
@@ -2988,6 +3314,16 @@ export default function Home() {
     else setIndex2((i) => i - 1);
   };
 
+  const next3 = () => {
+    if (index3 === QUESTIONS3.length - 1) finish3();
+    else setIndex3((i) => i + 1);
+  };
+
+  const back3 = () => {
+    if (index3 === 0) setScreen("tabs");
+    else setIndex3((i) => i - 1);
+  };
+
   const restart = () => {
     clearDraft("ch1");
     recordedRef.current = false;
@@ -3006,19 +3342,33 @@ export default function Home() {
     setScreen("intro2");
   };
 
+  const restart3 = () => {
+    clearDraft("ch3");
+    recorded3Ref.current = false;
+    startedAt3Ref.current = Date.now();
+    setAnswers3({});
+    setIndex3(0);
+    setScreen("intro3");
+  };
+
   const handleSignOut = useCallback(async () => {
     clearDraft("ch1");
     clearDraft("ch2");
+    clearDraft("ch3");
     recordedRef.current = false;
     recorded2Ref.current = false;
+    recorded3Ref.current = false;
     savingRef.current = false;
     startedAtRef.current = Date.now();
     startedAt2Ref.current = Date.now();
+    startedAt3Ref.current = Date.now();
     await signOut();
     setAnswers({});
     setAnswers2({});
+    setAnswers3({});
     setIndex(0);
     setIndex2(0);
+    setIndex3(0);
     setTab("chapters");
     setFromProfile(false);
     setScreen("welcome");
@@ -3041,12 +3391,15 @@ export default function Home() {
   const showTabs = screen === "tabs";
   const hasCh1 = !!state.ch1 || complete;
   const hasCh2 = !!state.ch2 || complete2;
+  const hasCh3 = !!state.ch3 || complete3;
 
   const mood =
     screen === "q"
       ? POLES[ORDER[index % ORDER.length]].color
       : screen === "q2"
       ? POLES[ORDER[index2 % ORDER.length]].color
+      : screen === "q3"
+      ? VERB_META[VERBS[index3 % VERBS.length]].color
       : (screen === "result" || screen === "tabs") && res && !res.flat && complete
       ? POLES[res.lead].color
       : C.accent;
@@ -3100,6 +3453,14 @@ export default function Home() {
         />
       )}
 
+      {screen === "intro3" && (
+        <Intro3
+          onStart={() => { setIndex3(0); setScreen("q3"); }}
+          user={user}
+          onProfile={() => { setScreen("tabs"); setTab("me"); }}
+        />
+      )}
+
       {screen === "q" && (
         <QuestionScreen
           key={q.id}
@@ -3115,6 +3476,15 @@ export default function Home() {
           q={q2} index={index2} total={QUESTIONS2.length} answer={answers2[q2.id]}
           onAnswer={(v: unknown) => setAnswers2((a) => ({ ...a, [q2.id]: v }))}
           onBack={back2} onNext={next2}
+        />
+      )}
+
+      {screen === "q3" && (
+        <QuestionScreen
+          key={q3.id}
+          q={q3} index={index3} total={QUESTIONS3.length} answer={answers3[q3.id]}
+          onAnswer={(v: unknown) => setAnswers3((a) => ({ ...a, [q3.id]: v }))}
+          onBack={back3} onNext={next3}
         />
       )}
 
@@ -3140,6 +3510,15 @@ export default function Home() {
           resonance={resonance}
           onNext={() => { setFromProfile(false); setScreen("tabs"); setTab("me"); }}
           onRestart={restart2}
+        />
+      )}
+
+      {screen === "result3" && (
+        <Result3
+          res3={res3}
+          materialLead={combined ? combined.lead : null}
+          onNext={() => { setFromProfile(false); setScreen("tabs"); setTab("me"); }}
+          onRestart={restart3}
         />
       )}
 
@@ -3181,10 +3560,13 @@ export default function Home() {
             <Map
               res={hasCh1 ? res : null}
               res2={hasCh2 ? res2 : null}
+              res3={hasCh3 ? res3 : null}
               done={hasCh1}
               done2={hasCh2}
+              done3={hasCh3}
               onOpenResult={() => { setFromProfile(true); setScreen("result"); }}
               onOpenResult2={() => { setFromProfile(true); setScreen("result2"); }}
+              onOpenResult3={() => { setFromProfile(true); setScreen("result3"); }}
               onStart={() => {
                 clearDraft("ch1");
                 recordedRef.current = false;
@@ -3197,16 +3579,24 @@ export default function Home() {
                 startedAt2Ref.current = Date.now();
                 setAnswers2({}); setIndex2(0); setScreen("intro2");
               }}
+              onStart3={() => {
+                clearDraft("ch3");
+                recorded3Ref.current = false;
+                startedAt3Ref.current = Date.now();
+                setAnswers3({}); setIndex3(0); setScreen("intro3");
+              }}
             />
           )}
           {tab === "me" && (
             <Profile
-              state={state} res={res} combined={combined}
+              state={state} res={res} res3={hasCh3 ? res3 : null} combined={combined}
               done={hasCh1}
               done2={hasCh2}
+              done3={hasCh3}
               user={user}
               onOpenResult={() => { setFromProfile(true); setScreen("result"); }}
               onOpenResult2={() => { setFromProfile(true); setScreen("result2"); }}
+              onOpenResult3={() => { setFromProfile(true); setScreen("result3"); }}
               onEdit={() => setScreen("save")}
               onReset={restart}
               onSignOut={handleSignOut}
