@@ -73,7 +73,7 @@ interface AuthCtx {
 const Ctx = createContext<AuthCtx>(null!);
 export const useAuth = () => useContext(Ctx);
 
-const CHAPTER_IDS = ["ch1", "ch2", "ch3", "ch4"];
+const CHAPTER_IDS = ["ch1", "ch2", "ch3", "ch4", "ch5", "ch6"];
 
 /* ------------------------------------------------------------------ */
 /*  Провайдер                                                          */
@@ -88,6 +88,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ch2: null,
     ch3: null,
     ch4: null,
+    ch5: null,
+    ch6: null,
     measurements: [],
   });
 
@@ -109,6 +111,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ch2: null,
         ch3: null,
         ch4: null,
+        ch5: null,
+        ch6: null,
       };
       for (const chapter of CHAPTER_IDS) {
         const { data: ans } = await supabase
@@ -144,6 +148,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ch2: chapterResults.ch2,
         ch3: chapterResults.ch3,
         ch4: chapterResults.ch4,
+        ch5: chapterResults.ch5,
+        ch6: chapterResults.ch6,
         measurements: (meas as Measurement[]) || [],
       });
     } catch (e) {
@@ -178,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else if (event === "SIGNED_OUT") {
         // чистим состояние ТОЛЬКО при явном выходе,
         // а не на промежуточных null во время редиректа
-        setState({ profile: null, ch1: null, ch2: null, ch3: null, ch4: null, measurements: [] });
+        setState({ profile: null, ch1: null, ch2: null, ch3: null, ch4: null, ch5: null, ch6: null, measurements: [] });
         setReady(true);
       }
     });
@@ -218,7 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-    setState({ profile: null, ch1: null, ch2: null, ch3: null, ch4: null, measurements: [] });
+    setState({ profile: null, ch1: null, ch2: null, ch3: null, ch4: null, ch5: null, ch6: null, measurements: [] });
   }, []);
 
   /* --- сохранить профиль ------------------------------------------ */
@@ -275,6 +281,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ch2: "foundation",
         ch3: "action",
         ch4: "thinking",
+        ch5: "drivers",
+        ch6: "antiprofile",
       };
       const section = sectionMap[chapter];
       if (section) {

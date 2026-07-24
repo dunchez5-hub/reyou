@@ -36,6 +36,38 @@ import {
   crossCheck4,
   crossCheckText4,
 } from "@/lib/chapter4";
+import {
+  DRIVERS,
+  DRIVER_META,
+  QUESTIONS5,
+  FALSIFICATION_ID,
+  falsificationQuestion,
+  computeResult5,
+  isComplete5,
+  driverLevel,
+  densityLevel,
+  TEXTS5,
+  DENSITY_TEXTS,
+  falsificationText,
+  directionLine,
+  crossTexts5,
+  flatDriversText,
+} from "@/lib/chapter5";
+import {
+  SUBSCALES,
+  SUB_META,
+  QUESTIONS6,
+  CONTRADICTION_ID,
+  contradictionQuestion,
+  computeResult6,
+  SCALE6_LEFT,
+  SCALE6_RIGHT,
+  ANTI_TEXTS,
+  ANTI_FOOTER,
+  contradictionText6,
+  consistencyText6,
+} from "@/lib/chapter6";
+import { narrowDirections, focusCount, narrowingHistory } from "@/lib/directions";
 
 /* ------------------------------------------------------------------ */
 /*  Токены                                                             */
@@ -839,9 +871,29 @@ function QuestionScreen({ q, index, total, answer, onAnswer, onBack, onNext }: a
       </div>
 
       {q.tag && (
-        <p style={{ fontFamily: SANS, fontSize: 13.5, color: C.faint, margin: "0 0 8px", fontStyle: "italic" }}>
-          {q.tag}
-        </p>
+        <div style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          background: C.accentDim,
+          border: `1px solid ${C.accent}33`,
+          borderRadius: 12,
+          padding: "10px 14px",
+          margin: "0 0 14px",
+        }}>
+          <span aria-hidden style={{
+            width: 6, height: 6, borderRadius: 3, background: C.accent, flexShrink: 0,
+          }} />
+          <span style={{
+            fontFamily: SANS,
+            fontSize: 14.5,
+            lineHeight: 1.4,
+            fontWeight: 600,
+            color: C.accent,
+          }}>
+            {q.tag}
+          </span>
+        </div>
       )}
       <h2 style={{
         fontFamily: SERIF, fontSize: 24, lineHeight: 1.3,
@@ -850,7 +902,7 @@ function QuestionScreen({ q, index, total, answer, onAnswer, onBack, onNext }: a
         {q.kind === "scale" ? `«${q.text}»` : q.text}
       </h2>
       {q.hint && (
-        <p style={{ fontFamily: SANS, fontSize: 14, color: C.dim, margin: "0 0 4px", lineHeight: 1.5 }}>
+        <p style={{ fontFamily: SANS, fontSize: 15, color: C.textSec, fontWeight: 500, margin: "0 0 4px", lineHeight: 1.5 }}>
           {q.hint}
         </p>
       )}
@@ -894,6 +946,19 @@ function QuestionScreen({ q, index, total, answer, onAnswer, onBack, onNext }: a
         )}
 
         {q.kind === "scale" && <ScaleQuestion answer={answer} onAnswer={onAnswer} />}
+
+        {q.kind === "scale6" && (
+          <ScaleQuestion
+            answer={answer}
+            onAnswer={onAnswer}
+            leftLabel={SCALE6_LEFT}
+            rightLabel={SCALE6_RIGHT}
+          />
+        )}
+
+        {q.kind === "slider" && (
+          <SliderQuestion q={q} answer={answer} onAnswer={onAnswer} />
+        )}
       </div>
 
       <div style={{ display: "flex", gap: 12, marginTop: 28, alignItems: "center" }}>
@@ -1081,7 +1146,7 @@ const stepBtn = (enabled: boolean): React.CSSProperties => ({
   display: "flex", alignItems: "center", justifyContent: "center",
 });
 
-function ScaleQuestion({ answer, onAnswer }: any) {
+function ScaleQuestion({ answer, onAnswer, leftLabel, rightLabel }: any) {
   return (
     <>
       <div role="radiogroup" aria-label="Насколько это про тебя" style={{ display: "flex", gap: 8 }}>
@@ -1113,9 +1178,40 @@ function ScaleQuestion({ answer, onAnswer }: any) {
           );
         })}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-        <Eyebrow>совсем не про меня</Eyebrow>
-        <Eyebrow>очень похоже на меня</Eyebrow>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 8 }}>
+        <span style={{ fontFamily: SANS, fontSize: 13, color: C.textSec, fontWeight: 500, flex: 1 }}>
+          {leftLabel || "совсем не про меня"}
+        </span>
+        <span style={{ fontFamily: SANS, fontSize: 13, color: C.textSec, fontWeight: 500, flex: 1, textAlign: "right" }}>
+          {rightLabel || "очень похоже на меня"}
+        </span>
+      </div>
+    </>
+  );
+}
+
+function SliderQuestion({ q, answer, onAnswer }: any) {
+  const v = answer == null ? 50 : answer;
+  return (
+    <>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={v}
+        onChange={(e) => onAnswer(Number(e.target.value))}
+        aria-label={q.text}
+        style={{ width: "100%", accentColor: C.accent, height: 32 }}
+      />
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 4 }}>
+        <span style={{ fontFamily: SANS, fontSize: 13, color: C.textSec, fontWeight: 500 }}>{q.leftLabel}</span>
+        <span style={{ fontFamily: SANS, fontSize: 13, color: C.textSec, fontWeight: 500 }}>{q.midLabel}</span>
+        <span style={{ fontFamily: SANS, fontSize: 13, color: C.textSec, fontWeight: 500 }}>{q.rightLabel}</span>
+      </div>
+      <div style={{ textAlign: "center", marginTop: 10 }}>
+        <span style={{ fontFamily: MONO, fontSize: 15, color: C.accent }}>
+          {answer == null ? "подвинь ползунок" : v}
+        </span>
       </div>
     </>
   );
@@ -2186,10 +2282,379 @@ function Result4({ res4, verbLead, onNext, onRestart }: any) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Интро глав 5 и 6                                                   */
+/* ------------------------------------------------------------------ */
+
+function IntroChapter({ eyebrow, titleTop, titleBottom, lead, sub, footer, onStart, user, onProfile }: any) {
+  return (
+    <div className="scene" style={{ paddingTop: 56 }}>
+      {user && (
+        <button
+          className="tap"
+          onClick={onProfile}
+          style={{
+            background: "none", border: "none", padding: "0 0 20px",
+            color: C.accent, fontFamily: SANS, fontSize: 15, fontWeight: 500,
+          }}
+        >
+          {user.email} · профиль
+        </button>
+      )}
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <h1 style={{
+        fontFamily: SERIF, fontSize: 40, lineHeight: 1.08,
+        margin: "10px 0 0", fontWeight: 700, letterSpacing: "-0.02em", color: C.text,
+      }}>
+        {titleTop}
+        <br />
+        {titleBottom}
+      </h1>
+
+      <p style={{ fontFamily: SANS, fontSize: 17, lineHeight: 1.55, color: C.textSec, margin: "28px 0 16px" }}>
+        {lead}
+      </p>
+      {sub && (
+        <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.6, color: C.dim, margin: "0 0 32px" }}>
+          {sub}
+        </p>
+      )}
+
+      <Button onClick={onStart}>Начать</Button>
+      <div style={{ marginTop: 16, textAlign: "center" }}>
+        <Eyebrow>{footer}</Eyebrow>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Экран: направления в фокусе — постоянно доступный список            */
+/* ------------------------------------------------------------------ */
+
+function FocusScreen({ count, names, history, onBack }: any) {
+  return (
+    <div className="scene" style={{ paddingTop: 28 }}>
+      <button
+        className="tap"
+        onClick={onBack}
+        style={{
+          background: "transparent", border: "none", color: C.accent,
+          fontFamily: SANS, fontSize: 15, padding: "0 0 18px", cursor: "pointer",
+        }}
+      >
+        ← Назад
+      </button>
+
+      <Eyebrow>Направления в фокусе</Eyebrow>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "12px 0 6px" }}>
+        <span style={{ fontFamily: SERIF, fontSize: 44, fontWeight: 700, color: C.text, letterSpacing: "-0.03em" }}>
+          {count}
+        </span>
+        <span style={{ fontFamily: SANS, fontSize: 17, color: C.dim }}>из 40</span>
+      </div>
+      <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.6, color: C.dim, margin: "0 0 24px" }}>
+        Это не список «кем стать». Это то, что осталось после отсева — направления, которые пока
+        не противоречат твоим ответам.
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 28 }}>
+        {names.map((n: string, i: number) => (
+          <div key={n} style={{
+            ...GLASS,
+            borderRadius: 14,
+            padding: "14px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          }}>
+            <span style={{
+              fontFamily: MONO, fontSize: 12, color: C.faint, width: 22, flexShrink: 0,
+            }}>
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.4, color: C.text }}>
+              {n}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <Eyebrow>Как сужалось</Eyebrow>
+      <div style={{ marginTop: 14, borderLeft: `1px solid ${C.line}`, paddingLeft: 18 }}>
+        {history.map((h: any, i: number) => (
+          <div key={i} style={{ position: "relative", paddingBottom: 16 }}>
+            <span style={{
+              position: "absolute", left: -23, top: 5, width: 9, height: 9, borderRadius: 5,
+              background: i === history.length - 1 ? C.accent : C.faint,
+            }} />
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+              <span style={{ fontFamily: SANS, fontSize: 14.5, color: C.textSec }}>{h.label}</span>
+              <span style={{ fontFamily: MONO, fontSize: 14, color: C.text }}>{h.n}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p style={{ fontFamily: SANS, fontSize: 13.5, color: C.faint, lineHeight: 1.6, marginTop: 12 }}>
+        Список пересобирается после каждой главы. Чем дальше — тем он точнее.
+      </p>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Бейдж счётчика — виден всегда, открывает FocusScreen                */
+/* ------------------------------------------------------------------ */
+
+function FocusBadge({ count, onOpen }: any) {
+  return (
+    <button
+      className="tap"
+      onClick={onOpen}
+      style={{
+        width: "100%",
+        ...GLASS,
+        borderRadius: 16,
+        padding: "14px 18px",
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+        cursor: "pointer",
+        marginBottom: 18,
+        textAlign: "left",
+      }}
+    >
+      <span style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, color: C.accent, lineHeight: 1 }}>
+        {count}
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontFamily: SANS, fontSize: 15, fontWeight: 600, color: C.text }}>
+          направлений в фокусе
+        </span>
+        <span style={{ display: "block", fontFamily: SANS, fontSize: 13, color: C.dim, marginTop: 2 }}>
+          посмотреть список и историю →
+        </span>
+      </span>
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Экран: результат главы 5 — драйверы, плотность, фальсификация       */
+/* ------------------------------------------------------------------ */
+
+function Result5({ res5, verbLead, materialLead, quadrantTitle, resonanceLevel, onNext, onRestart }: any) {
+  const leadMeta = DRIVER_META[res5.lead];
+  const crosses = crossTexts5(res5, verbLead, materialLead, quadrantTitle, resonanceLevel);
+  const fals = res5.falsification
+    ? falsificationText(res5.falsification, verbLead, materialLead, res5.lead)
+    : null;
+
+  return (
+    <div className="scene" style={{ paddingTop: 28 }}>
+      <Eyebrow>Глава 5 пройдена · что тебя держит</Eyebrow>
+
+      <div style={{
+        position: "relative", marginTop: 16, marginBottom: 20, borderRadius: 24,
+        padding: "30px 24px 26px", overflow: "hidden",
+        background: `linear-gradient(160deg, ${leadMeta.color}1F 0%, rgba(255,255,255,0.72) 70%)`,
+        border: "1px solid rgba(255,255,255,0.7)",
+        boxShadow: "0 14px 44px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
+        backdropFilter: "blur(24px) saturate(160%)",
+        WebkitBackdropFilter: "blur(24px) saturate(160%)",
+      }}>
+        <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: leadMeta.color, marginBottom: 6 }}>
+          Твой ведущий драйвер
+        </div>
+        <div style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 700, letterSpacing: "-0.025em", color: C.text, lineHeight: 1.1 }}>
+          {leadMeta.name}
+        </div>
+        <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.6, color: C.textSec, margin: "14px 0 0" }}>
+          {directionLine(verbLead, materialLead, res5.lead, !verbLead)}
+        </p>
+      </div>
+
+      <div style={{ marginBottom: 22 }}>
+        {res5.ranked.map((d: string) => (
+          <VerbRow key={d} meta={DRIVER_META[d]} value={res5.pct[d]} H={res5.H} />
+        ))}
+      </div>
+
+      {res5.flat ? (
+        <TextBlock accent={C.dim} t={flatDriversText()} />
+      ) : (
+        <Card style={{ borderLeft: `3px solid ${leadMeta.color}` }}>
+          <h3 style={{ fontFamily: SERIF, fontSize: 21, lineHeight: 1.3, fontWeight: 700, margin: "0 0 12px", color: C.text }}>
+            {TEXTS5[res5.lead][driverLevel(res5.pct[res5.lead])].title}
+          </h3>
+          <p style={{ fontFamily: SANS, fontSize: 16, lineHeight: 1.6, color: C.textSec, margin: 0 }}>
+            {TEXTS5[res5.lead][driverLevel(res5.pct[res5.lead])].body}
+          </p>
+          <Detail label="Вспомни" text={TEXTS5[res5.lead][driverLevel(res5.pct[res5.lead])].memory} />
+          <Detail label="Сила" text={TEXTS5[res5.lead][driverLevel(res5.pct[res5.lead])].power} />
+          <Detail label="Обратная сторона" text={TEXTS5[res5.lead][driverLevel(res5.pct[res5.lead])].watch} />
+          <Detail label="На что смотреть" text={TEXTS5[res5.lead][driverLevel(res5.pct[res5.lead])].where} />
+        </Card>
+      )}
+
+      <div style={{ marginTop: 20 }}>
+        <Eyebrow>Социальная плотность</Eyebrow>
+        <div style={{ marginTop: 12 }}>
+          <ContinuumBar
+            label="Сколько людей в дне"
+            value={res5.density}
+            H={res5.densityH}
+            color={C.poleL}
+            leftCaption="один"
+            rightCaption="поток"
+          />
+        </div>
+        <Card style={{ borderLeft: `3px solid ${C.poleL}` }}>
+          <h3 style={{ fontFamily: SERIF, fontSize: 20, lineHeight: 1.3, fontWeight: 700, margin: "0 0 12px", color: C.text }}>
+            {DENSITY_TEXTS[densityLevel(res5.density)].title}
+          </h3>
+          <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.6, color: C.textSec, margin: 0 }}>
+            {DENSITY_TEXTS[densityLevel(res5.density)].body}
+          </p>
+          <Detail label="Вспомни" text={DENSITY_TEXTS[densityLevel(res5.density)].memory} />
+          <Detail label="Норма для тебя" text={DENSITY_TEXTS[densityLevel(res5.density)].norm} />
+          <Detail label="Где сгоришь" text={DENSITY_TEXTS[densityLevel(res5.density)].burnout} />
+        </Card>
+      </div>
+
+      {fals && (
+        <div style={{ marginTop: 20 }}>
+          <Card style={{
+            borderLeft: `3px solid ${res5.falsification === "broken" ? C.poleM : C.accent}`,
+          }}>
+            <Eyebrow>Проверка на прочность</Eyebrow>
+            <h3 style={{ fontFamily: SERIF, fontSize: 21, lineHeight: 1.3, fontWeight: 700, margin: "10px 0 12px", color: C.text }}>
+              {fals.title}
+            </h3>
+            <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.6, color: C.textSec, margin: 0, whiteSpace: "pre-line" }}>
+              {fals.body}
+            </p>
+          </Card>
+        </div>
+      )}
+
+      {crosses.map((c: any, i: number) => (
+        <div key={i} style={{ marginTop: 14 }}>
+          <Card style={{ background: "transparent", borderStyle: "dashed" }}>
+            <Eyebrow>{c.title}</Eyebrow>
+            <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.6, color: C.dim, margin: "10px 0 0" }}>
+              {c.body}
+            </p>
+          </Card>
+        </div>
+      ))}
+
+      <div style={{
+        marginTop: 26, padding: "22px 20px", border: `1px solid ${C.line}`, borderRadius: 16,
+        display: "flex", alignItems: "center", gap: 18,
+      }}>
+        <div style={{ fontFamily: SERIF, fontSize: 44, lineHeight: 1 }}>12</div>
+        <div>
+          <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.45 }}>направлений в фокусе</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: C.faint, letterSpacing: "0.1em", marginTop: 4 }}>
+            было 18 → стало 12
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <Button onClick={onNext}>Открыть «что тебя держит»</Button>
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <Button variant="ghost" onClick={onRestart}>Пройти главу 5 заново</Button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Экран: результат главы 6 — антипрофиль                             */
+/* ------------------------------------------------------------------ */
+
+function Result6({ res6, verbLead, onNext, onRestart }: any) {
+  const contra = res6.contradiction;
+
+  return (
+    <div className="scene" style={{ paddingTop: 28 }}>
+      <Eyebrow>Глава 6 пройдена · антипрофиль</Eyebrow>
+
+      <h2 style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1.15, fontWeight: 700, margin: "16px 0 10px", color: C.text }}>
+        Тебе точно не подходит
+      </h2>
+      <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.6, color: C.dim, margin: "0 0 20px" }}>
+        {res6.soft
+          ? "Ни одна среда не набрала критического балла — значит, ты довольно вынослив. Вот три, которые всё же тяжелее прочих."
+          : "Эти среды выключают тебя сильнее всего — по убыванию."}
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {res6.exclusions.map((sub: string, i: number) => (
+          <Card key={sub} style={{ borderLeft: `3px solid ${SUB_META[sub].color}` }}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+              <h3 style={{ fontFamily: SERIF, fontSize: 20, lineHeight: 1.3, fontWeight: 700, margin: 0, color: C.text }}>
+                {ANTI_TEXTS[sub].title}
+              </h3>
+              <span style={{ fontFamily: MONO, fontSize: 14, color: SUB_META[sub].color, flexShrink: 0 }}>
+                {Math.round(res6.score[sub])}
+              </span>
+            </div>
+            <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.6, color: C.textSec, margin: "12px 0 0" }}>
+              {ANTI_TEXTS[sub].body}
+            </p>
+            <Detail label="Например" text={ANTI_TEXTS[sub].examples} />
+          </Card>
+        ))}
+      </div>
+
+      <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.65, color: C.textSec, margin: "22px 0 0" }}>
+        {ANTI_FOOTER}
+      </p>
+
+      <div style={{ marginTop: 18 }}>
+        <Card style={{ background: "transparent", borderStyle: "dashed" }}>
+          <Eyebrow>{contra ? "Нестыковка" : "Согласованность"}</Eyebrow>
+          <h3 style={{ fontFamily: SERIF, fontSize: 20, lineHeight: 1.3, fontWeight: 700, margin: "10px 0 10px", color: C.text }}>
+            {contra ? contradictionText6(contra.sub, contra.verbLead).title : consistencyText6().title}
+          </h3>
+          <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.6, color: C.dim, margin: 0, whiteSpace: "pre-line" }}>
+            {contra ? contradictionText6(contra.sub, contra.verbLead).body : consistencyText6().body}
+          </p>
+        </Card>
+      </div>
+
+      <div style={{
+        marginTop: 26, padding: "22px 20px", border: `1px solid ${C.line}`, borderRadius: 16,
+        display: "flex", alignItems: "center", gap: 18,
+      }}>
+        <div style={{ fontFamily: SERIF, fontSize: 44, lineHeight: 1 }}>7</div>
+        <div>
+          <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.45 }}>направлений в фокусе</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: C.faint, letterSpacing: "0.1em", marginTop: 4 }}>
+            было 12 → стало 7
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <Button onClick={onNext}>Открыть «антипрофиль»</Button>
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <Button variant="ghost" onClick={onRestart}>Пройти главу 6 заново</Button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Экран: карта глав                                                  */
 /* ------------------------------------------------------------------ */
 
-function buildChapters(hasCh1: boolean, hasCh2: boolean, hasCh3: boolean, hasCh4: boolean) {
+function buildChapters(hasCh1: boolean, hasCh2: boolean, hasCh3: boolean, hasCh4: boolean, hasCh5: boolean, hasCh6: boolean) {
   return [
     hasCh1
       ? { state: "done", title: "Твоё поле", note: hasCh2 ? "обновлено · данные из двух глав" : "открыто · 24 направления в фокусе" }
@@ -2209,17 +2674,22 @@ function buildChapters(hasCh1: boolean, hasCh2: boolean, hasCh3: boolean, hasCh4
       : hasCh4
       ? { state: "done", title: "Твой способ думать", note: "открыто" }
       : { state: "locked", title: "Глава 4. Как думает твоя голова" },
-    hasCh4
+    hasCh4 && !hasCh5
       ? { state: "next", title: "Глава 5. Что тебя заряжает", note: "10 вопросов, 3 минуты", sub: "проверит гипотезу на прочность" }
-      : { state: "locked", title: "Что тебя выключает", at: "откроется на 67%" },
-    { state: "hidden", title: "Раздел ещё не назван", at: "откроется на 83%" },
+      : hasCh5
+      ? { state: "done", title: "Что тебя держит", note: "открыто · драйвер и социальная плотность" }
+      : { state: "locked", title: "Глава 5. Что тебя заряжает", at: "откроется после главы 4" },
+    hasCh5 && !hasCh6
+      ? { state: "next", title: "Глава 6. Что тебя выключает", note: "9 вопросов, 2 минуты", sub: "список сред, куда не идти даже за хорошие деньги" }
+      : hasCh6
+      ? { state: "done", title: "Антипрофиль", note: "открыто · куда не идти" }
+      : { state: "locked", title: "Что тебя выключает", at: "откроется после главы 5" },
   ];
 }
 
-function Map({ res, res2, res3, res4, done, done2, done3, done4, onOpenResult, onStart, onStart2, onStart3, onStart4, onOpenResult2, onOpenResult3, onOpenResult4 }: any) {
-  const chapters = buildChapters(done, done2, done3, done4);
-  const focus = done4 ? 10 : done3 ? 14 : done2 ? 18 : done ? (res && res.flat ? 33 : res.pct[res.lead] >= 35 ? 24 : 28) : 40;
-  const percentLabel = done4 ? "36" : done3 ? "27" : done2 ? "17" : done ? "8" : "0";
+function Map({ res, res2, res3, res4, res5, res6, done, done2, done3, done4, done5, done6, focus, onOpenFocus, onOpenResult, onStart, onStart2, onStart3, onStart4, onStart5, onStart6, onOpenResult2, onOpenResult3, onOpenResult4, onOpenResult5, onOpenResult6 }: any) {
+  const chapters = buildChapters(done, done2, done3, done4, done5, done6);
+  const percentLabel = done6 ? "86" : done5 ? "71" : done4 ? "36" : done3 ? "27" : done2 ? "17" : done ? "8" : "0";
 
   return (
     <div className="scene" style={{ paddingTop: 36 }}>
@@ -2233,10 +2703,14 @@ function Map({ res, res2, res3, res4, done, done2, done3, done4, onOpenResult, o
           margin: "12px 0 6px",
         }}
       >
-        {done4 ? "Твой способ думать открыт" : done3 ? "Твоё действие открыто" : done2 ? "Фундамент подтверждён" : done ? "Твоё поле открыто" : "Ничего ещё не пройдено"}
+        {done6 ? "Антипрофиль открыт" : done5 ? "Что тебя держит — открыто" : done4 ? "Твой способ думать открыт" : done3 ? "Твоё действие открыто" : done2 ? "Фундамент подтверждён" : done ? "Твоё поле открыто" : "Ничего ещё не пройдено"}
       </h2>
       <p style={{ fontFamily: SANS, fontSize: 15, color: C.dim, margin: "0 0 24px" }}>
-        {done4
+        {done6
+          ? "Все шесть глав пройдены."
+          : done5
+          ? "Пять глав из шести пройдены. Осталась одна."
+          : done4
           ? "Четыре главы из шести пройдены. Остальное пока закрыто."
           : done3
           ? "Три главы из шести пройдены. Остальное пока закрыто."
@@ -2261,6 +2735,8 @@ function Map({ res, res2, res3, res4, done, done2, done3, done4, onOpenResult, o
         ))}
       </div>
 
+      {done && <FocusBadge count={focus} onOpen={onOpenFocus} />}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {chapters.map((ch, i) => {
           const locked = ch.state === "locked" || ch.state === "hidden";
@@ -2272,10 +2748,14 @@ function Map({ res, res2, res3, res4, done, done2, done3, done4, onOpenResult, o
                 else if (ch.state === "next" && i === 1) onStart2 && onStart2();
                 else if (ch.state === "next" && i === 2) onStart3 && onStart3();
                 else if (ch.state === "next" && i === 3) onStart4 && onStart4();
+                else if (ch.state === "next" && i === 4) onStart5 && onStart5();
+                else if (ch.state === "next" && i === 5) onStart6 && onStart6();
                 else if (ch.state === "done" && i === 0) onOpenResult();
                 else if (ch.state === "done" && i === 1) onOpenResult2 && onOpenResult2();
                 else if (ch.state === "done" && i === 2) onOpenResult3 && onOpenResult3();
                 else if (ch.state === "done" && i === 3) onOpenResult4 && onOpenResult4();
+                else if (ch.state === "done" && i === 4) onOpenResult5 && onOpenResult5();
+                else if (ch.state === "done" && i === 5) onOpenResult6 && onOpenResult6();
               }}
               style={{
                 background: ch.state === "next" ? C.surfaceUp : C.surface,
@@ -2806,7 +3286,7 @@ function ProgressRing({ percent }: any) {
   );
 }
 
-function Profile({ state, res, res3, res4, combined, onOpenResult, onOpenResult2, onOpenResult3, onOpenResult4, onEdit, onReset, onSignOut, done: doneProp, done2, done3, done4, user }: any) {
+function Profile({ state, res, res3, res4, res5, res6, combined, focus, onOpenFocus, onOpenResult, onOpenResult2, onOpenResult3, onOpenResult4, onOpenResult5, onOpenResult6, onEdit, onReset, onSignOut, done: doneProp, done2, done3, done4, done5, done6, user }: any) {
   const p = state.profile;
   const done = doneProp ?? !!state.ch1;
   const lead = combined && (done || done2) ? POLES[combined.lead] : null;
@@ -2826,17 +3306,29 @@ function Profile({ state, res, res3, res4, combined, onOpenResult, onOpenResult2
   const dateLabel4 = date4
     ? date4.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
     : "";
+  const date5 = state.ch5?.date ? new Date(state.ch5.date) : null;
+  const dateLabel5 = date5
+    ? date5.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
+    : "";
+  const date6 = state.ch6?.date ? new Date(state.ch6.date) : null;
+  const dateLabel6 = date6
+    ? date6.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
+    : "";
 
   return (
     <div className="scene" style={{ paddingTop: 36 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 26 }}>
-        <ProgressRing percent={done4 ? 36 : done3 ? 27 : done2 ? 17 : done ? 8 : 0} />
+        <ProgressRing percent={done6 ? 86 : done5 ? 71 : done4 ? 36 : done3 ? 27 : done2 ? 17 : done ? 8 : 0} />
         <div style={{ minWidth: 0 }}>
           <h2 style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.15, fontWeight: 700, margin: 0, color: C.text }}>
             {p?.name ? p.name : user?.email ? user.email.split("@")[0] : "Твой профиль"}
           </h2>
           <p style={{ fontFamily: SANS, fontSize: 14, color: C.dim, margin: "6px 0 0" }}>
-            {done4
+            {done6
+              ? "Изучен на 86%. Все шесть глав."
+              : done5
+              ? "Изучен на 71%. Пять глав из шести."
+              : done4
               ? "Изучен на 36%. Четыре главы из шести."
               : done3
               ? "Изучен на 27%. Три главы из шести."
@@ -2848,6 +3340,8 @@ function Profile({ state, res, res3, res4, combined, onOpenResult, onOpenResult2
           </p>
         </div>
       </div>
+
+      {done && <FocusBadge count={focus} onOpen={onOpenFocus} />}
 
       {done && combined && (
         <>
@@ -2984,6 +3478,48 @@ function Profile({ state, res, res3, res4, combined, onOpenResult, onOpenResult2
             </button>
           )}
 
+          {done5 && res5 && (
+            <button
+              className="tap"
+              onClick={onOpenResult5}
+              style={{
+                width: "100%", textAlign: "left" as const, background: C.bgCard,
+                boxShadow: C.shadow, border: `1px solid ${C.line}`,
+                borderLeft: `3px solid ${DRIVER_META[res5.lead].color}`,
+                borderRadius: 16, padding: 20, cursor: "pointer", color: C.text, marginTop: 12,
+              }}
+            >
+              <Eyebrow>Что тебя держит · открыто</Eyebrow>
+              <div style={{ fontFamily: SERIF, fontSize: 21, lineHeight: 1.25, margin: "10px 0 10px" }}>
+                {res5.flat ? "Драйвер пока не определился" : DRIVER_META[res5.lead].name}
+              </div>
+              <div style={{ fontFamily: SANS, fontSize: 13.5, color: C.faint }}>
+                Смотреть драйверы и плотность →
+              </div>
+            </button>
+          )}
+
+          {done6 && res6 && (
+            <button
+              className="tap"
+              onClick={onOpenResult6}
+              style={{
+                width: "100%", textAlign: "left" as const, background: C.bgCard,
+                boxShadow: C.shadow, border: `1px solid ${C.line}`,
+                borderLeft: `3px solid ${SUB_META[res6.exclusions[0]].color}`,
+                borderRadius: 16, padding: 20, cursor: "pointer", color: C.text, marginTop: 12,
+              }}
+            >
+              <Eyebrow>Антипрофиль · открыто</Eyebrow>
+              <div style={{ fontFamily: SERIF, fontSize: 21, lineHeight: 1.25, margin: "10px 0 10px" }}>
+                Куда тебе не идти
+              </div>
+              <div style={{ fontFamily: SANS, fontSize: 13.5, color: C.faint }}>
+                {res6.exclusions.length} среды в списке исключений →
+              </div>
+            </button>
+          )}
+
           <div style={{ marginTop: 26 }}>
             <Eyebrow>Хроника</Eyebrow>
             <div style={{ marginTop: 14, borderLeft: `1px solid ${C.line}`, paddingLeft: 18 }}>
@@ -3068,6 +3604,34 @@ function Profile({ state, res, res3, res4, combined, onOpenResult, onOpenResult2
                     Четвёртый замер: способ думать — {QUADRANTS[res4.quadrant].title.toLowerCase()}
                   </div>
                 </div>
+              ) : null}
+              {done5 && res5 ? (
+                <div style={{ position: "relative", paddingBottom: 20 }}>
+                  <span style={{
+                    position: "absolute", left: -23, top: 5, width: 9, height: 9,
+                    borderRadius: 5, background: DRIVER_META[res5.lead].color,
+                  }} />
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: C.faint, letterSpacing: "0.1em" }}>
+                    {dateLabel5}
+                  </div>
+                  <div style={{ fontFamily: SANS, fontSize: 15, marginTop: 5, lineHeight: 1.5 }}>
+                    Пятый замер: держит — {res5.flat ? "связка драйверов" : DRIVER_META[res5.lead].name.toLowerCase()}
+                  </div>
+                </div>
+              ) : null}
+              {done6 && res6 ? (
+                <div style={{ position: "relative", paddingBottom: 20 }}>
+                  <span style={{
+                    position: "absolute", left: -23, top: 5, width: 9, height: 9,
+                    borderRadius: 5, background: SUB_META[res6.exclusions[0]].color,
+                  }} />
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: C.faint, letterSpacing: "0.1em" }}>
+                    {dateLabel6}
+                  </div>
+                  <div style={{ fontFamily: SANS, fontSize: 15, marginTop: 5, lineHeight: 1.5 }}>
+                    Шестой замер: антипрофиль — {res6.exclusions.length} среды исключены
+                  </div>
+                </div>
               ) : (
                 <div style={{ position: "relative", opacity: 0.45 }}>
                   <span
@@ -3082,7 +3646,7 @@ function Profile({ state, res, res3, res4, combined, onOpenResult, onOpenResult2
                     }}
                   />
                   <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.5 }}>
-                    Следующая отметка появится после {done3 ? "главы 4" : done2 ? "главы 3" : "главы 2"}
+                    Следующая отметка появится после {done5 ? "главы 6" : done4 ? "главы 5" : done3 ? "главы 4" : done2 ? "главы 3" : "главы 2"}
                   </div>
                 </div>
               )}
@@ -3292,6 +3856,11 @@ export default function Home() {
   const [answers3, setAnswers3] = useState<Record<string, unknown>>({});
   const [index4, setIndex4] = useState(0);
   const [answers4, setAnswers4] = useState<Record<string, unknown>>({});
+  const [index5, setIndex5] = useState(0);
+  const [answers5, setAnswers5] = useState<Record<string, unknown>>({});
+  const [index6, setIndex6] = useState(0);
+  const [answers6, setAnswers6] = useState<Record<string, unknown>>({});
+  const [focusFrom, setFocusFrom] = useState("tabs");
   const [fromProfile, setFromProfile] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
 
@@ -3299,11 +3868,15 @@ export default function Home() {
   const startedAt2Ref = useRef<number>(Date.now());
   const startedAt3Ref = useRef<number>(Date.now());
   const startedAt4Ref = useRef<number>(Date.now());
+  const startedAt5Ref = useRef<number>(Date.now());
+  const startedAt6Ref = useRef<number>(Date.now());
   const bootedRef = useRef(false);
   const recordedRef = useRef(false);
   const recorded2Ref = useRef(false);
   const recorded3Ref = useRef(false);
   const recorded4Ref = useRef(false);
+  const recorded5Ref = useRef(false);
+  const recorded6Ref = useRef(false);
   const savingRef = useRef(false);
 
   /* --- восстановление черновика при первом рендере ---------------- */
@@ -3329,6 +3902,16 @@ export default function Home() {
     if (draft4) {
       setAnswers4(draft4.answers);
       startedAt4Ref.current = draft4.startedAt || Date.now();
+    }
+    const draft5 = readDraft("ch5");
+    if (draft5) {
+      setAnswers5(draft5.answers);
+      startedAt5Ref.current = draft5.startedAt || Date.now();
+    }
+    const draft6 = readDraft("ch6");
+    if (draft6) {
+      setAnswers6(draft6.answers);
+      startedAt6Ref.current = draft6.startedAt || Date.now();
     }
   }, []);
 
@@ -3357,10 +3940,42 @@ export default function Home() {
     }
   }, [answers4]);
 
+  useEffect(() => {
+    if (Object.keys(answers5).length > 0) {
+      saveDraft("ch5", answers5, startedAt5Ref.current);
+    }
+  }, [answers5]);
+
+  useEffect(() => {
+    if (Object.keys(answers6).length > 0) {
+      saveDraft("ch6", answers6, startedAt6Ref.current);
+    }
+  }, [answers6]);
+
   const res = useMemo(() => computeResult(answers), [answers]);
   const res2 = useMemo(() => computeResult2(answers2), [answers2]);
   const res3 = useMemo(() => computeResult3(answers3), [answers3]);
   const res4 = useMemo(() => computeResult4(answers4), [answers4]);
+  const res3ForBank = useMemo(() => ({ lead: res3.lead, flat: res3.flat }), [res3.lead, res3.flat]);
+  const res5 = useMemo(
+    () => computeResult5(answers5, res3ForBank.lead, res3ForBank.flat),
+    [answers5, res3ForBank]
+  );
+  const res6 = useMemo(
+    () => computeResult6(answers6, res3ForBank.lead, res3ForBank.flat),
+    [answers6, res3ForBank]
+  );
+
+  // полный список вопросов главы 5 = базовые + подставной фальсификационный
+  const questions5Full = useMemo(
+    () => [...QUESTIONS5, falsificationQuestion(res3ForBank.lead, res3ForBank.flat)],
+    [res3ForBank]
+  );
+  // глава 6 = базовые + контрольный вопрос по глаголу
+  const questions6Full = useMemo(
+    () => [...QUESTIONS6, contradictionQuestion(res3ForBank.lead, res3ForBank.flat)],
+    [res3ForBank]
+  );
 
   const complete = useMemo(
     () => QUESTIONS.every((qq: any) => isComplete(qq, answers[qq.id])),
@@ -3377,6 +3992,14 @@ export default function Home() {
   const complete4 = useMemo(
     () => QUESTIONS4.every((qq: any) => answers4[qq.id] != null),
     [answers4]
+  );
+  const complete5 = useMemo(
+    () => questions5Full.every((qq: any) => isComplete5(qq, answers5[qq.id])),
+    [answers5, questions5Full]
+  );
+  const complete6 = useMemo(
+    () => questions6Full.every((qq: any) => answers6[qq.id] != null),
+    [answers6, questions6Full]
   );
 
   // резонанс: сравниваем ведущий полюс главы 1 (из зафиксированных
@@ -3453,21 +4076,37 @@ export default function Home() {
     }
   }, [ready, user, state.ch4, complete4]);
 
+  /* --- есть сохранённая глава 5: подтягиваем ----------------------- */
   useEffect(() => {
-    if (ready && user && (state.ch1 || state.ch2 || state.ch3 || state.ch4) && screen === "welcome") {
+    if (ready && user && state.ch5 && !complete5) {
+      setAnswers5(state.ch5.answers as Record<string, unknown>);
+    }
+  }, [ready, user, state.ch5, complete5]);
+
+  /* --- есть сохранённая глава 6: подтягиваем ----------------------- */
+  useEffect(() => {
+    if (ready && user && state.ch6 && !complete6) {
+      setAnswers6(state.ch6.answers as Record<string, unknown>);
+    }
+  }, [ready, user, state.ch6, complete6]);
+
+  useEffect(() => {
+    if (ready && user && (state.ch1 || state.ch2 || state.ch3 || state.ch4 || state.ch5 || state.ch6) && screen === "welcome") {
       setScreen("tabs");
       setTab("me");
     }
-  }, [ready, user, state.ch1, state.ch2, state.ch3, state.ch4]);
+  }, [ready, user, state.ch1, state.ch2, state.ch3, state.ch4, state.ch5, state.ch6]);
 
   useEffect(() => {
     if (topRef.current) topRef.current.scrollIntoView({ block: "start" });
-  }, [screen, index, index2, index3, index4, tab]);
+  }, [screen, index, index2, index3, index4, index5, index6, tab]);
 
   const q = QUESTIONS[index];
   const q2 = QUESTIONS2[index2];
   const q3 = QUESTIONS3[index3];
   const q4 = QUESTIONS4[index4];
+  const q5 = questions5Full[index5];
+  const q6 = questions6Full[index6];
 
   /* --- завершение главы 1 ------------------------------------------ */
   const finish = useCallback(async () => {
@@ -3614,6 +4253,69 @@ export default function Home() {
     setScreen("result4");
   }, [answers4, res3, res4, saveChapter, recordCompletion, user]);
 
+  /* --- завершение главы 5 ------------------------------------------ */
+  const finish5 = useCallback(async () => {
+    const secs = Math.max(1, Math.round((Date.now() - startedAt5Ref.current) / 1000));
+
+    if (!recorded5Ref.current) {
+      recorded5Ref.current = true;
+      recordCompletion({
+        chapter: "ch5",
+        leadPole: res5.flat ? null : res5.lead,
+        scores: DRIVERS.reduce((acc: any, d: string) => {
+          acc[d] = Math.round(res5.pct[d] * 10) / 10;
+          return acc;
+        }, { density: Math.round(res5.density) }),
+        isFlat: res5.flat,
+        hasGap: res5.falsification === "broken",
+        secondsSpent: secs,
+        savedAccount: !!user,
+      });
+    }
+
+    if (user) {
+      const measurements = [
+        ...DRIVERS.map((pole: string) => ({
+          pole, kind: "ipsative" as string, value: res5.pct[pole], weight: res5.sumW,
+        })),
+        { pole: "density", kind: "normative" as string, value: res5.density, weight: 2.8 },
+      ];
+      await saveChapter("ch5", answers5, measurements);
+      clearDraft("ch5");
+    }
+    setScreen("result5");
+  }, [answers5, res5, saveChapter, recordCompletion, user]);
+
+  /* --- завершение главы 6 ------------------------------------------ */
+  const finish6 = useCallback(async () => {
+    const secs = Math.max(1, Math.round((Date.now() - startedAt6Ref.current) / 1000));
+
+    if (!recorded6Ref.current) {
+      recorded6Ref.current = true;
+      recordCompletion({
+        chapter: "ch6",
+        leadPole: res6.exclusions[0] || null,
+        scores: SUBSCALES.reduce((acc: any, sub: string) => {
+          acc[sub] = Math.round(res6.score[sub] * 10) / 10;
+          return acc;
+        }, {}),
+        isFlat: res6.soft,
+        hasGap: !!res6.contradiction,
+        secondsSpent: secs,
+        savedAccount: !!user,
+      });
+    }
+
+    if (user) {
+      const measurements = SUBSCALES.map((sub: string) => ({
+        pole: sub, kind: "antiprofile" as string, value: res6.score[sub], weight: 1,
+      }));
+      await saveChapter("ch6", answers6, measurements);
+      clearDraft("ch6");
+    }
+    setScreen("result6");
+  }, [answers6, res6, saveChapter, recordCompletion, user]);
+
   const next = () => {
     if (index === QUESTIONS.length - 1) finish();
     else setIndex((i) => i + 1);
@@ -3654,6 +4356,26 @@ export default function Home() {
     else setIndex4((i) => i - 1);
   };
 
+  const next5 = () => {
+    if (index5 === questions5Full.length - 1) finish5();
+    else setIndex5((i) => i + 1);
+  };
+
+  const back5 = () => {
+    if (index5 === 0) setScreen("tabs");
+    else setIndex5((i) => i - 1);
+  };
+
+  const next6 = () => {
+    if (index6 === questions6Full.length - 1) finish6();
+    else setIndex6((i) => i + 1);
+  };
+
+  const back6 = () => {
+    if (index6 === 0) setScreen("tabs");
+    else setIndex6((i) => i - 1);
+  };
+
   const restart = () => {
     clearDraft("ch1");
     recordedRef.current = false;
@@ -3690,29 +4412,57 @@ export default function Home() {
     setScreen("intro4");
   };
 
+  const restart5 = () => {
+    clearDraft("ch5");
+    recorded5Ref.current = false;
+    startedAt5Ref.current = Date.now();
+    setAnswers5({});
+    setIndex5(0);
+    setScreen("intro5");
+  };
+
+  const restart6 = () => {
+    clearDraft("ch6");
+    recorded6Ref.current = false;
+    startedAt6Ref.current = Date.now();
+    setAnswers6({});
+    setIndex6(0);
+    setScreen("intro6");
+  };
+
   const handleSignOut = useCallback(async () => {
     clearDraft("ch1");
     clearDraft("ch2");
     clearDraft("ch3");
     clearDraft("ch4");
+    clearDraft("ch5");
+    clearDraft("ch6");
     recordedRef.current = false;
     recorded2Ref.current = false;
     recorded3Ref.current = false;
     recorded4Ref.current = false;
+    recorded5Ref.current = false;
+    recorded6Ref.current = false;
     savingRef.current = false;
     startedAtRef.current = Date.now();
     startedAt2Ref.current = Date.now();
     startedAt3Ref.current = Date.now();
     startedAt4Ref.current = Date.now();
+    startedAt5Ref.current = Date.now();
+    startedAt6Ref.current = Date.now();
     await signOut();
     setAnswers({});
     setAnswers2({});
     setAnswers3({});
     setAnswers4({});
+    setAnswers5({});
+    setAnswers6({});
     setIndex(0);
     setIndex2(0);
     setIndex3(0);
     setIndex4(0);
+    setIndex5(0);
+    setIndex6(0);
     setTab("chapters");
     setFromProfile(false);
     setScreen("welcome");
@@ -3737,6 +4487,17 @@ export default function Home() {
   const hasCh2 = !!state.ch2 || complete2;
   const hasCh3 = !!state.ch3 || complete3;
   const hasCh4 = !!state.ch4 || complete4;
+  const hasCh5 = !!state.ch5 || complete5;
+  const hasCh6 = !!state.ch6 || complete6;
+
+  const focusNow = focusCount(hasCh1, hasCh2, hasCh3, hasCh4, hasCh5, hasCh6, hasCh1 ? res : null);
+  const focusNames = narrowDirections({
+    pctByPole: hasCh1 ? (combined ? combined.pct : res.pct) : null,
+    verbRanked: hasCh3 && !res3.flat ? res3.ranked : null,
+    antiHigh: hasCh6 ? res6.exclusions : null,
+    limit: focusNow,
+  });
+  const focusHistory = narrowingHistory(hasCh1, hasCh2, hasCh3, hasCh4, hasCh5, hasCh6, hasCh1 ? res : null);
 
   const mood =
     screen === "q"
@@ -3747,6 +4508,10 @@ export default function Home() {
       ? VERB_META[VERBS[index3 % VERBS.length]].color
       : screen === "q4"
       ? C.accent
+      : screen === "q5"
+      ? DRIVER_META[DRIVERS[index5 % DRIVERS.length]].color
+      : screen === "q6"
+      ? SUB_META[SUBSCALES[index6 % SUBSCALES.length]].color
       : (screen === "result" || screen === "tabs") && res && !res.flat && complete
       ? POLES[res.lead].color
       : C.accent;
@@ -3816,6 +4581,43 @@ export default function Home() {
         />
       )}
 
+      {screen === "intro5" && (
+        <IntroChapter
+          eyebrow="Глава пятая · 71%"
+          titleTop="Что тебя"
+          titleBottom="заряжает"
+          lead="Ты уже знаешь, что делаешь и как думаешь. Осталось понять, ради чего ты это делаешь — и не сломается ли всё, что мы собрали, об эту правду."
+          sub="Последний вопрос будет подставным: мы намеренно попробуем сломать гипотезу четырёх глав."
+          footer="10 вопросов · 3 минуты · открывает «что тебя держит»"
+          onStart={() => { setIndex5(0); setScreen("q5"); }}
+          user={user}
+          onProfile={() => { setScreen("tabs"); setTab("me"); }}
+        />
+      )}
+
+      {screen === "intro6" && (
+        <IntroChapter
+          eyebrow="Глава шестая · 86%"
+          titleTop="Что тебя"
+          titleBottom="выключает"
+          lead="Мы почти не спросим, чего ты хочешь. Мы спросим, от чего ты уйдёшь через полгода — даже если зарплата хорошая."
+          sub="Самая практичная глава: после неё будет список сред, куда не стоит идти, даже если позовут на хорошие деньги."
+          footer="9 вопросов · 2 минуты · открывает «антипрофиль»"
+          onStart={() => { setIndex6(0); setScreen("q6"); }}
+          user={user}
+          onProfile={() => { setScreen("tabs"); setTab("me"); }}
+        />
+      )}
+
+      {screen === "focus" && (
+        <FocusScreen
+          count={focusNow}
+          names={focusNames}
+          history={focusHistory}
+          onBack={() => setScreen(focusFrom)}
+        />
+      )}
+
       {screen === "q" && (
         <QuestionScreen
           key={q.id}
@@ -3849,6 +4651,24 @@ export default function Home() {
           q={q4} index={index4} total={QUESTIONS4.length} answer={answers4[q4.id]}
           onAnswer={(v: unknown) => setAnswers4((a) => ({ ...a, [q4.id]: v }))}
           onBack={back4} onNext={next4}
+        />
+      )}
+
+      {screen === "q5" && (
+        <QuestionScreen
+          key={q5.id}
+          q={q5} index={index5} total={questions5Full.length} answer={answers5[q5.id]}
+          onAnswer={(v: unknown) => setAnswers5((a) => ({ ...a, [q5.id]: v }))}
+          onBack={back5} onNext={next5}
+        />
+      )}
+
+      {screen === "q6" && (
+        <QuestionScreen
+          key={q6.id}
+          q={q6} index={index6} total={questions6Full.length} answer={answers6[q6.id]}
+          onAnswer={(v: unknown) => setAnswers6((a) => ({ ...a, [q6.id]: v }))}
+          onBack={back6} onNext={next6}
         />
       )}
 
@@ -3895,6 +4715,27 @@ export default function Home() {
         />
       )}
 
+      {screen === "result5" && (
+        <Result5
+          res5={res5}
+          verbLead={res3.flat ? null : res3.lead}
+          materialLead={combined ? combined.lead : res.lead}
+          quadrantTitle={hasCh4 ? QUADRANTS[res4.quadrant].title : null}
+          resonanceLevel={resonance ? resonance.level : null}
+          onNext={() => { setFromProfile(false); setScreen("tabs"); setTab("me"); }}
+          onRestart={restart5}
+        />
+      )}
+
+      {screen === "result6" && (
+        <Result6
+          res6={res6}
+          verbLead={res3.flat ? null : res3.lead}
+          onNext={() => { setFromProfile(false); setScreen("tabs"); setTab("me"); }}
+          onRestart={restart6}
+        />
+      )}
+
       {screen === "auth" && (
         <div style={{ paddingTop: 20 }}>
           <button
@@ -3935,14 +4776,22 @@ export default function Home() {
               res2={hasCh2 ? res2 : null}
               res3={hasCh3 ? res3 : null}
               res4={hasCh4 ? res4 : null}
+              res5={hasCh5 ? res5 : null}
+              res6={hasCh6 ? res6 : null}
               done={hasCh1}
               done2={hasCh2}
               done3={hasCh3}
               done4={hasCh4}
+              done5={hasCh5}
+              done6={hasCh6}
+              focus={focusNow}
+              onOpenFocus={() => { setFocusFrom("tabs"); setScreen("focus"); }}
               onOpenResult={() => { setFromProfile(true); setScreen("result"); }}
               onOpenResult2={() => { setFromProfile(true); setScreen("result2"); }}
               onOpenResult3={() => { setFromProfile(true); setScreen("result3"); }}
               onOpenResult4={() => { setFromProfile(true); setScreen("result4"); }}
+              onOpenResult5={() => { setFromProfile(true); setScreen("result5"); }}
+              onOpenResult6={() => { setFromProfile(true); setScreen("result6"); }}
               onStart={() => {
                 clearDraft("ch1");
                 recordedRef.current = false;
@@ -3967,20 +4816,39 @@ export default function Home() {
                 startedAt4Ref.current = Date.now();
                 setAnswers4({}); setIndex4(0); setScreen("intro4");
               }}
+              onStart5={() => {
+                clearDraft("ch5");
+                recorded5Ref.current = false;
+                startedAt5Ref.current = Date.now();
+                setAnswers5({}); setIndex5(0); setScreen("intro5");
+              }}
+              onStart6={() => {
+                clearDraft("ch6");
+                recorded6Ref.current = false;
+                startedAt6Ref.current = Date.now();
+                setAnswers6({}); setIndex6(0); setScreen("intro6");
+              }}
             />
           )}
           {tab === "me" && (
             <Profile
-              state={state} res={res} res3={hasCh3 ? res3 : null} res4={hasCh4 ? res4 : null} combined={combined}
+              state={state} res={res} res3={hasCh3 ? res3 : null} res4={hasCh4 ? res4 : null}
+              res5={hasCh5 ? res5 : null} res6={hasCh6 ? res6 : null} combined={combined}
               done={hasCh1}
               done2={hasCh2}
               done3={hasCh3}
               done4={hasCh4}
+              done5={hasCh5}
+              done6={hasCh6}
+              focus={focusNow}
+              onOpenFocus={() => { setFocusFrom("tabs"); setScreen("focus"); }}
               user={user}
               onOpenResult={() => { setFromProfile(true); setScreen("result"); }}
               onOpenResult2={() => { setFromProfile(true); setScreen("result2"); }}
               onOpenResult3={() => { setFromProfile(true); setScreen("result3"); }}
               onOpenResult4={() => { setFromProfile(true); setScreen("result4"); }}
+              onOpenResult5={() => { setFromProfile(true); setScreen("result5"); }}
+              onOpenResult6={() => { setFromProfile(true); setScreen("result6"); }}
               onEdit={() => setScreen("save")}
               onReset={restart}
               onSignOut={handleSignOut}
