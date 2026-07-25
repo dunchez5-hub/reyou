@@ -4080,68 +4080,7 @@ function clearDraft(chapter: string) {
 }
 
 
-class ErrorBoundary extends React.Component<any, any> {
-  constructor(props: any) {
-    super(props);
-    this.state = { error: null, info: null };
-  }
-  static getDerivedStateFromError(error: any) {
-    return { error };
-  }
-  componentDidCatch(error: any, info: any) {
-    console.error("Поймана ошибка экрана:", error, info);
-    this.setState({ info });
-  }
-  render() {
-    if (this.state.error) {
-      return (
-        <div style={{
-          minHeight: "100vh", display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center", padding: 24,
-          background: C.bg, fontFamily: SANS, textAlign: "center",
-        }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>😕</div>
-          <h2 style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 700, color: C.text, margin: "0 0 8px" }}>
-            Что-то сломалось на этом шаге
-          </h2>
-          <p style={{ fontFamily: SANS, fontSize: 15, color: C.dim, lineHeight: 1.6, maxWidth: 360, margin: "0 0 20px" }}>
-            Твои ответы сохранены. Можно перезагрузить страницу и продолжить с того же места.
-          </p>
-          <div style={{ maxWidth: 400, width: "100%" }}>
-            <Button onClick={() => { try { window.location.reload(); } catch {} }}>
-              Перезагрузить
-            </Button>
-          </div>
-          <pre style={{
-            marginTop: 20, fontFamily: MONO, fontSize: 11, color: C.faint,
-            whiteSpace: "pre-wrap", wordBreak: "break-word", maxWidth: 360,
-          }}>
-            {String(this.state.error?.message || this.state.error || "")}
-          </pre>
-          {/* временная диагностика — покажет, в каком компоненте упало */}
-          <pre style={{
-            marginTop: 12, fontFamily: MONO, fontSize: 10, color: C.faint,
-            whiteSpace: "pre-wrap", wordBreak: "break-word", maxWidth: 360, textAlign: "left",
-            maxHeight: 200, overflow: "auto", background: "rgba(0,0,0,0.03)", padding: 10, borderRadius: 8,
-          }}>
-            {this.state.info?.componentStack || ""}
-          </pre>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
 export default function Home() {
-  return (
-    <ErrorBoundary>
-      <HomeInner />
-    </ErrorBoundary>
-  );
-}
-
-function HomeInner() {
   const {
     ready, user, state,
     saveProfile, saveChapter, recordCompletion, signOut,
@@ -4445,22 +4384,6 @@ function HomeInner() {
   const q6 = questions6Full[index6];
   const q7 = questions7List[index7];
 
-  // ВРЕМЕННАЯ ДИАГНОСТИКА — удалить после отладки краша на вопросе 9/10 главы 7
-  if (typeof window !== "undefined") {
-    console.log("[debug ch7]", {
-      index7,
-      questions7List_length: questions7List.length,
-      q7_id: q7?.id,
-      q7,
-      targetSub7,
-      res6_exclusions: res6?.exclusions,
-      res6_score: res6?.score,
-      res6_contradiction: res6?.contradiction,
-      res7,
-      answers7,
-    });
-  }
-
   /* --- завершение главы 1 ------------------------------------------ */
   const finish = useCallback(async () => {
     const secs = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
@@ -4673,51 +4596,56 @@ function HomeInner() {
   const finish7 = useCallback(async () => {
     const secs = Math.max(1, Math.round((Date.now() - startedAt7Ref.current) / 1000));
 
-    if (!recorded7Ref.current) {
-      recorded7Ref.current = true;
-      recordCompletion({
-        chapter: "ch7",
-        leadPole: res7.scenarioVerb,
-        scores: {
-          retraining: Math.round(res7.constraintScore.retraining * 10) / 10,
-          horizon: Math.round(res7.constraintScore.horizon * 10) / 10,
-          financial: Math.round(res7.constraintScore.financial * 10) / 10,
-        },
-        isFlat: false,
-        hasGap: !!(res3ForBank.lead && res7.scenarioVerb && res3ForBank.lead !== res7.scenarioVerb),
-        secondsSpent: secs,
-        savedAccount: !!user,
-      });
-    }
+    try {
+      if (!recorded7Ref.current) {
+        recorded7Ref.current = true;
+        recordCompletion({
+          chapter: "ch7",
+          leadPole: res7.scenarioVerb,
+          scores: {
+            retraining: Math.round(res7.constraintScore.retraining * 10) / 10,
+            horizon: Math.round(res7.constraintScore.horizon * 10) / 10,
+            financial: Math.round(res7.constraintScore.financial * 10) / 10,
+          },
+          isFlat: false,
+          hasGap: !!(res3ForBank.lead && res7.scenarioVerb && res3ForBank.lead !== res7.scenarioVerb),
+          secondsSpent: secs,
+          savedAccount: !!user,
+        });
+      }
 
-    if (user) {
-      const measurements = [
-        { pole: "retraining", kind: "normative" as string, value: res7.constraintScore.retraining, weight: 1 },
-        { pole: "horizon", kind: "normative" as string, value: res7.constraintScore.horizon, weight: 1 },
-        { pole: "financial", kind: "normative" as string, value: res7.constraintScore.financial, weight: 1 },
-        // повторный сигнал по глаголу — усиливает или уточняет вывод главы 3
-        ...(res7.scenarioVerb
-          ? VERBS.map((v: string) => ({
-              pole: v, kind: "ipsative" as string,
-              value: v === res7.scenarioVerb ? 100 : 0, weight: 1.4,
-            }))
-          : []),
-        // драйвер под давлением — информационная точка для будущих глав
-        ...(res7.pressureDriver
-          ? [{ pole: res7.pressureDriver, kind: "pressure_driver" as string, value: 100, weight: 1.2 }]
-          : []),
-        // уточнение самого сильного пункта антипрофиля
-        {
-          pole: targetSub7, kind: "antiprofile" as string,
-          value: (() => {
-            const base = res6?.score?.[targetSub7] ?? 50; // безопасный дефолт, если субшкала не найдена
-            return res7.antiConfirmed ? Math.min(100, base + 5) : Math.max(0, base - 15);
-          })(),
-          weight: 1.1,
-        },
-      ];
-      await saveChapter("ch7", answers7, measurements);
-      clearDraft("ch7");
+      if (user) {
+        const measurements = [
+          { pole: "retraining", kind: "normative" as string, value: res7.constraintScore.retraining, weight: 1 },
+          { pole: "horizon", kind: "normative" as string, value: res7.constraintScore.horizon, weight: 1 },
+          { pole: "financial", kind: "normative" as string, value: res7.constraintScore.financial, weight: 1 },
+          // повторный сигнал по глаголу — усиливает или уточняет вывод главы 3
+          ...(res7.scenarioVerb
+            ? VERBS.map((v: string) => ({
+                pole: v, kind: "ipsative" as string,
+                value: v === res7.scenarioVerb ? 100 : 0, weight: 1.4,
+              }))
+            : []),
+          // драйвер под давлением — информационная точка для будущих глав
+          ...(res7.pressureDriver
+            ? [{ pole: res7.pressureDriver, kind: "pressure_driver" as string, value: 100, weight: 1.2 }]
+            : []),
+          // уточнение самого сильного пункта антипрофиля
+          {
+            pole: targetSub7, kind: "antiprofile" as string,
+            value: (() => {
+              const base = res6?.score?.[targetSub7] ?? 50; // безопасный дефолт, если субшкала не найдена
+              return res7.antiConfirmed ? Math.min(100, base + 5) : Math.max(0, base - 15);
+            })(),
+            weight: 1.1,
+          },
+        ];
+        await saveChapter("ch7", answers7, measurements);
+        clearDraft("ch7");
+      }
+    } catch (err) {
+      // сохранение статистики/замеров не должно ронять экран результата
+      console.error("[finish7] сбой при сохранении, продолжаем без остановки", err);
     }
     setScreen("result7");
   }, [answers7, res7, res3ForBank, res6, targetSub7, saveChapter, recordCompletion, user]);
