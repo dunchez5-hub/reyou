@@ -4276,7 +4276,7 @@ function HomeInner() {
   // цель уточняющего вопроса c7scenario_q3: субшкала с флагом contradiction
   // из главы 6, иначе — субшкала с максимальным баллом
   const targetSub7 = useMemo(
-    () => (res6.contradiction ? res6.contradiction.sub : res6.exclusions[0]) || "rush",
+    () => (res6?.contradiction ? res6.contradiction.sub : res6?.exclusions?.[0]) || "rush",
     [res6]
   );
   const questions7List = useMemo(() => questions7Full(targetSub7), [targetSub7]);
@@ -4684,7 +4684,10 @@ function HomeInner() {
         // уточнение самого сильного пункта антипрофиля
         {
           pole: targetSub7, kind: "antiprofile" as string,
-          value: res7.antiConfirmed ? Math.min(100, res6.score[targetSub7] + 5) : Math.max(0, res6.score[targetSub7] - 15),
+          value: (() => {
+            const base = res6?.score?.[targetSub7] ?? 50; // безопасный дефолт, если субшкала не найдена
+            return res7.antiConfirmed ? Math.min(100, base + 5) : Math.max(0, base - 15);
+          })(),
           weight: 1.1,
         },
       ];
