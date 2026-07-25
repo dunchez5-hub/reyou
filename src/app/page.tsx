@@ -3711,7 +3711,7 @@ function Profile({ state, res, res3, res4, res5, res6, res7, combined, focus, on
               style={{
                 width: "100%", textAlign: "left" as const, background: C.bgCard,
                 boxShadow: C.shadow, border: `1px solid ${C.line}`,
-                borderLeft: `3px solid ${SUB_META[res6.exclusions[0]].color}`,
+                borderLeft: `3px solid ${(SUB_META[res6.exclusions[0]] || SUB_META.rush).color}`,
                 borderRadius: 16, padding: 20, cursor: "pointer", color: C.text, marginTop: 12,
               }}
             >
@@ -3849,7 +3849,7 @@ function Profile({ state, res, res3, res4, res5, res6, res7, combined, focus, on
                 <div style={{ position: "relative", paddingBottom: 20 }}>
                   <span style={{
                     position: "absolute", left: -23, top: 5, width: 9, height: 9,
-                    borderRadius: 5, background: SUB_META[res6.exclusions[0]].color,
+                    borderRadius: 5, background: (SUB_META[res6.exclusions[0]] || SUB_META.rush).color,
                   }} />
                   <div style={{ fontFamily: MONO, fontSize: 11, color: C.faint, letterSpacing: "0.1em" }}>
                     {dateLabel6}
@@ -4080,7 +4080,59 @@ function clearDraft(chapter: string) {
 }
 
 
+class ErrorBoundary extends React.Component<any, any> {
+  constructor(props: any) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { error };
+  }
+  componentDidCatch(error: any, info: any) {
+    console.error("Поймана ошибка экрана:", error, info);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{
+          minHeight: "100vh", display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", padding: 24,
+          background: C.bg, fontFamily: SANS, textAlign: "center",
+        }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>😕</div>
+          <h2 style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 700, color: C.text, margin: "0 0 8px" }}>
+            Что-то сломалось на этом шаге
+          </h2>
+          <p style={{ fontFamily: SANS, fontSize: 15, color: C.dim, lineHeight: 1.6, maxWidth: 360, margin: "0 0 20px" }}>
+            Твои ответы сохранены. Можно перезагрузить страницу и продолжить с того же места.
+          </p>
+          <div style={{ maxWidth: 400, width: "100%" }}>
+            <Button onClick={() => { try { window.location.reload(); } catch {} }}>
+              Перезагрузить
+            </Button>
+          </div>
+          <pre style={{
+            marginTop: 20, fontFamily: MONO, fontSize: 11, color: C.faint,
+            whiteSpace: "pre-wrap", wordBreak: "break-word", maxWidth: 360,
+          }}>
+            {String(this.state.error?.message || this.state.error || "")}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function Home() {
+  return (
+    <ErrorBoundary>
+      <HomeInner />
+    </ErrorBoundary>
+  );
+}
+
+function HomeInner() {
   const {
     ready, user, state,
     saveProfile, saveChapter, recordCompletion, signOut,
@@ -4224,7 +4276,7 @@ export default function Home() {
   // цель уточняющего вопроса c7scenario_q3: субшкала с флагом contradiction
   // из главы 6, иначе — субшкала с максимальным баллом
   const targetSub7 = useMemo(
-    () => (res6.contradiction ? res6.contradiction.sub : res6.exclusions[0]),
+    () => (res6.contradiction ? res6.contradiction.sub : res6.exclusions[0]) || "rush",
     [res6]
   );
   const questions7List = useMemo(() => questions7Full(targetSub7), [targetSub7]);
