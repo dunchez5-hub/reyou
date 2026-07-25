@@ -4083,13 +4083,14 @@ function clearDraft(chapter: string) {
 class ErrorBoundary extends React.Component<any, any> {
   constructor(props: any) {
     super(props);
-    this.state = { error: null };
+    this.state = { error: null, info: null };
   }
   static getDerivedStateFromError(error: any) {
     return { error };
   }
   componentDidCatch(error: any, info: any) {
     console.error("Поймана ошибка экрана:", error, info);
+    this.setState({ info });
   }
   render() {
     if (this.state.error) {
@@ -4116,6 +4117,14 @@ class ErrorBoundary extends React.Component<any, any> {
             whiteSpace: "pre-wrap", wordBreak: "break-word", maxWidth: 360,
           }}>
             {String(this.state.error?.message || this.state.error || "")}
+          </pre>
+          {/* временная диагностика — покажет, в каком компоненте упало */}
+          <pre style={{
+            marginTop: 12, fontFamily: MONO, fontSize: 10, color: C.faint,
+            whiteSpace: "pre-wrap", wordBreak: "break-word", maxWidth: 360, textAlign: "left",
+            maxHeight: 200, overflow: "auto", background: "rgba(0,0,0,0.03)", padding: 10, borderRadius: 8,
+          }}>
+            {this.state.info?.componentStack || ""}
           </pre>
         </div>
       );
