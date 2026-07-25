@@ -4445,6 +4445,22 @@ function HomeInner() {
   const q6 = questions6Full[index6];
   const q7 = questions7List[index7];
 
+  // ВРЕМЕННАЯ ДИАГНОСТИКА — удалить после отладки краша на вопросе 9/10 главы 7
+  if (typeof window !== "undefined") {
+    console.log("[debug ch7]", {
+      index7,
+      questions7List_length: questions7List.length,
+      q7_id: q7?.id,
+      q7,
+      targetSub7,
+      res6_exclusions: res6?.exclusions,
+      res6_score: res6?.score,
+      res6_contradiction: res6?.contradiction,
+      res7,
+      answers7,
+    });
+  }
+
   /* --- завершение главы 1 ------------------------------------------ */
   const finish = useCallback(async () => {
     const secs = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
