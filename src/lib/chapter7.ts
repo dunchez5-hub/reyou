@@ -145,6 +145,7 @@ export const FINAL_QUESTION = {
   weight: 0,
   tag: "последний вопрос в этих семи главах — он ни на что не влияет, кроме того, что останется с тобой",
   text: "Из всего, что ты узнал(а) о себе за эти семь глав — что удивило больше всего?",
+  options: [], // <== Та самая заглушка, спасающая от краша
 };
 
 export function questions7Full(targetSub: string) {
@@ -159,7 +160,10 @@ export function questions7Full(targetSub: string) {
 }
 
 export function isComplete7(q, a) {
-  if (q.kind === "text") return true; // финальный вопрос необязателен и не блокирует
+  if (q.kind === "text") {
+    // Теперь вопрос будет считаться отвеченным, только если ввели текст
+    return typeof a === "string" && a.trim().length > 0; 
+  }
   return a != null;
 }
 
