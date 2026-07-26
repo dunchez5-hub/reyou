@@ -68,6 +68,21 @@ import {
   consistencyText6,
 } from "@/lib/chapter6";
 import { narrowDirections, focusCount, narrowingHistory } from "@/lib/directions";
+import {
+  CONSTRAINTS,
+  CONSTRAINT_META,
+  QUESTIONS7_MAIN,
+  antiScenarioQuestion,
+  FINAL_Q7,
+  computeResult7,
+  isComplete7,
+  constraintText,
+  scenarioVerbText,
+  scenarioDriverText,
+  scenarioThinkText,
+  scenarioAntiText,
+  buildFinalProfile,
+} from "@/lib/chapter7";
 
 /* ------------------------------------------------------------------ */
 /*  Токены                                                             */
@@ -945,7 +960,14 @@ function QuestionScreen({ q, index, total, answer, onAnswer, onBack, onNext }: a
           <DistributeQuestion q={q} answer={answer} onAnswer={onAnswer} />
         )}
 
-        {q.kind === "scale" && <ScaleQuestion answer={answer} onAnswer={onAnswer} />}
+        {q.kind === "scale" && (
+          <ScaleQuestion
+            answer={answer}
+            onAnswer={onAnswer}
+            leftLabel={q.leftLabel}
+            rightLabel={q.rightLabel}
+          />
+        )}
 
         {q.kind === "scale6" && (
           <ScaleQuestion
@@ -958,6 +980,10 @@ function QuestionScreen({ q, index, total, answer, onAnswer, onBack, onNext }: a
 
         {q.kind === "slider" && (
           <SliderQuestion q={q} answer={answer} onAnswer={onAnswer} />
+        )}
+
+        {q.kind === "text" && (
+          <TextQuestion answer={answer} onAnswer={onAnswer} />
         )}
       </div>
 
@@ -989,6 +1015,7 @@ function QuestionScreen({ q, index, total, answer, onAnswer, onBack, onNext }: a
 }
 
 function isComplete(q, a) {
+  if (q.kind === "text") return true; // необязательный свободный вопрос, не блокирует «Дальше»
   if (a == null) return false;
   if (q.kind === "rank") return a.length === q.items.length;
   if (q.kind === "distribute") {
@@ -1212,6 +1239,35 @@ function SliderQuestion({ q, answer, onAnswer }: any) {
         <span style={{ fontFamily: MONO, fontSize: 15, color: C.accent }}>
           {answer == null ? "подвинь ползунок" : v}
         </span>
+      </div>
+    </>
+  );
+}
+
+function TextQuestion({ answer, onAnswer }: any) {
+  return (
+    <>
+      <textarea
+        value={(answer as string) || ""}
+        onChange={(e) => onAnswer(e.target.value)}
+        placeholder="Необязательно — но если хочешь, напиши пару слов"
+        rows={5}
+        style={{
+          width: "100%",
+          background: C.bgCard,
+          border: `1.5px solid ${C.line}`,
+          borderRadius: 14,
+          padding: "14px 16px",
+          color: C.text,
+          fontFamily: SANS,
+          fontSize: 16,
+          lineHeight: 1.5,
+          resize: "vertical" as const,
+          boxShadow: C.shadow,
+        }}
+      />
+      <div style={{ fontFamily: MONO, fontSize: 11, color: C.faint, letterSpacing: "0.08em", marginTop: 6 }}>
+        не влияет на результат · можно пропустить
       </div>
     </>
   );
@@ -2651,10 +2707,172 @@ function Result6({ res6, verbLead, onNext, onRestart }: any) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Экран: результат главы 7 — ограничения, сценарий, итоговый профиль  */
+/* ------------------------------------------------------------------ */
+
+function Result7({ res7, finalProfile, onNext, onRestart }: any) {
+  const crosses = [
+    scenarioVerbText(res7),
+    scenarioDriverText(res7),
+    scenarioThinkText(res7),
+    res7.antiAnswered ? scenarioAntiText(res7) : null,
+  ].filter(Boolean);
+
+  return (
+    <div className="scene" style={{ paddingTop: 28 }}>
+      <Eyebrow>Глава 7 пройдена · последняя проверка</Eyebrow>
+
+      <h2 style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1.15, fontWeight: 700, margin: "16px 0 10px", color: C.text }}>
+        Вот что нужно учесть
+      </h2>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {CONSTRAINTS_ORDER.map((sub: string) => {
+          const c = res7.constraints[sub];
+          const t = constraintText(sub, c.level);
+          return (
+            <Card key={sub} style={{ borderLeft: `3px solid ${CONSTRAINT_META[sub].color}` }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                <h3 style={{ fontFamily: SERIF, fontSize: 19, lineHeight: 1.3, fontWeight: 700, margin: 0, color: C.text }}>
+                  {t.title}
+                </h3>
+                <span style={{ fontFamily: MONO, fontSize: 14, color: CONSTRAINT_META[sub].color, flexShrink: 0 }}>
+                  {Math.round(c.score)}
+                </span>
+              </div>
+              <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.6, color: C.textSec, margin: "10px 0 0" }}>
+                {t.body}
+              </p>
+            </Card>
+          );
+        })}
+      </div>
+
+      <h2 style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.2, fontWeight: 700, margin: "28px 0 10px", color: C.text }}>
+        В живом выборе ты повёл(а) себя как…
+      </h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {crosses.map((c: any, i: number) => (
+          <Card key={i} style={{ background: "transparent", borderStyle: "dashed" }}>
+            <Eyebrow>{c.title}</Eyebrow>
+            <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.6, color: C.dim, margin: "10px 0 0", whiteSpace: "pre-line" }}>
+              {c.body}
+            </p>
+          </Card>
+        ))}
+      </div>
+
+      <div style={{
+        position: "relative", marginTop: 26, marginBottom: 20, borderRadius: 24,
+        padding: "30px 24px 26px", overflow: "hidden",
+        background: `linear-gradient(160deg, ${C.accent}1F 0%, rgba(255,255,255,0.72) 70%)`,
+        border: "1px solid rgba(255,255,255,0.7)",
+        boxShadow: "0 14px 44px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
+        backdropFilter: "blur(24px) saturate(160%)",
+        WebkitBackdropFilter: "blur(24px) saturate(160%)",
+      }}>
+        <Eyebrow>100% · семь глав пройдены</Eyebrow>
+        <div style={{ fontFamily: SERIF, fontSize: 22, lineHeight: 1.4, fontWeight: 700, color: C.text, margin: "12px 0 0" }}>
+          Кто ты как специалист
+        </div>
+        <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.6, color: C.textSec, margin: "12px 0 0" }}>
+          {finalProfile.paragraph}
+        </p>
+      </div>
+
+      {finalProfile.tasks.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <Eyebrow>Задачи, которые тебе подходят</Eyebrow>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+            {finalProfile.tasks.map((t: string, i: number) => (
+              <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <span style={{ color: C.accent, fontFamily: SANS, fontSize: 15 }}>·</span>
+                <span style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.5, color: C.textSec }}>{t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {finalProfile.roles.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <Eyebrow>Роли, которые стоит рассмотреть</Eyebrow>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
+            {finalProfile.roles.map((r: any, i: number) => (
+              <Card key={i}>
+                <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 700, color: C.text }}>{r.name}</div>
+                <div style={{ fontFamily: SANS, fontSize: 14, lineHeight: 1.5, color: C.dim, marginTop: 6 }}>{r.reason}</div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {finalProfile.skills.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <Eyebrow>Что развивать первым</Eyebrow>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+            {finalProfile.skills.map((s: string, i: number) => (
+              <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <span style={{ color: C.accent, fontFamily: SANS, fontSize: 15 }}>·</span>
+                <span style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.5, color: C.textSec }}>{s}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {finalProfile.avoid.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <Eyebrow>Куда точно не идти</Eyebrow>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+            {finalProfile.avoid.map((sub: string) => (
+              <div key={sub} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <span style={{ width: 8, height: 8, borderRadius: 4, background: SUB_META[sub].color, marginTop: 6, flexShrink: 0 }} />
+                <span style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.5, color: C.textSec }}>
+                  {ANTI_TEXTS[sub].title}
+                  {finalProfile.avoidSoftened && sub === res7.antiTargetSub ? " — не железное, а сильное предпочтение" : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.6, color: C.dim, margin: "26px 0 0", fontStyle: "italic" }}>
+        {finalProfile.disclaimer}
+      </p>
+
+      <div style={{
+        marginTop: 22, padding: "22px 20px", border: `1px solid ${C.line}`, borderRadius: 16,
+        display: "flex", alignItems: "center", gap: 18,
+      }}>
+        <div style={{ fontFamily: SERIF, fontSize: 44, lineHeight: 1 }}>{finalProfile.roles.length || 1}</div>
+        <div>
+          <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.45 }}>рекомендованных направления</div>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: C.faint, letterSpacing: "0.1em", marginTop: 4 }}>
+            было 7 → стало {finalProfile.roles.length || 1}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <Button onClick={onNext}>Открыть «твой профиль»</Button>
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <Button variant="ghost" onClick={onRestart}>Пройти главу 7 заново</Button>
+      </div>
+    </div>
+  );
+}
+
+const CONSTRAINTS_ORDER = ["retraining", "horizon", "financial_buffer"];
+
+/* ------------------------------------------------------------------ */
 /*  Экран: карта глав                                                  */
 /* ------------------------------------------------------------------ */
 
-function buildChapters(hasCh1: boolean, hasCh2: boolean, hasCh3: boolean, hasCh4: boolean, hasCh5: boolean, hasCh6: boolean) {
+function buildChapters(hasCh1: boolean, hasCh2: boolean, hasCh3: boolean, hasCh4: boolean, hasCh5: boolean, hasCh6: boolean, hasCh7: boolean) {
   return [
     hasCh1
       ? { state: "done", title: "Твоё поле", note: hasCh2 ? "обновлено · данные из двух глав" : "открыто · 24 направления в фокусе" }
@@ -2684,12 +2902,17 @@ function buildChapters(hasCh1: boolean, hasCh2: boolean, hasCh3: boolean, hasCh4
       : hasCh6
       ? { state: "done", title: "Антипрофиль", note: "открыто · куда не идти" }
       : { state: "locked", title: "Что тебя выключает", at: "откроется после главы 5" },
+    hasCh6 && !hasCh7
+      ? { state: "next", title: "Глава 7. Последняя проверка", note: "10 вопросов, 3–3,5 минуты", sub: "проверит, выдержит ли всё собранное живой выбор" }
+      : hasCh7
+      ? { state: "done", title: "Твой профиль", note: "открыто · итоговая сборка" }
+      : { state: "locked", title: "Глава 7. Последняя проверка", at: "откроется после главы 6" },
   ];
 }
 
-function Map({ res, res2, res3, res4, res5, res6, done, done2, done3, done4, done5, done6, focus, onOpenFocus, onOpenResult, onStart, onStart2, onStart3, onStart4, onStart5, onStart6, onOpenResult2, onOpenResult3, onOpenResult4, onOpenResult5, onOpenResult6 }: any) {
-  const chapters = buildChapters(done, done2, done3, done4, done5, done6);
-  const percentLabel = done6 ? "86" : done5 ? "71" : done4 ? "36" : done3 ? "27" : done2 ? "17" : done ? "8" : "0";
+function Map({ res, res2, res3, res4, res5, res6, res7, done, done2, done3, done4, done5, done6, done7, focus, onOpenFocus, onOpenResult, onStart, onStart2, onStart3, onStart4, onStart5, onStart6, onStart7, onOpenResult2, onOpenResult3, onOpenResult4, onOpenResult5, onOpenResult6, onOpenResult7 }: any) {
+  const chapters = buildChapters(done, done2, done3, done4, done5, done6, done7);
+  const percentLabel = done7 ? "100" : done6 ? "86" : done5 ? "71" : done4 ? "36" : done3 ? "27" : done2 ? "17" : done ? "8" : "0";
 
   return (
     <div className="scene" style={{ paddingTop: 36 }}>
@@ -2703,21 +2926,23 @@ function Map({ res, res2, res3, res4, res5, res6, done, done2, done3, done4, don
           margin: "12px 0 6px",
         }}
       >
-        {done6 ? "Антипрофиль открыт" : done5 ? "Что тебя держит — открыто" : done4 ? "Твой способ думать открыт" : done3 ? "Твоё действие открыто" : done2 ? "Фундамент подтверждён" : done ? "Твоё поле открыто" : "Ничего ещё не пройдено"}
+        {done7 ? "Твой профиль собран" : done6 ? "Антипрофиль открыт" : done5 ? "Что тебя держит — открыто" : done4 ? "Твой способ думать открыт" : done3 ? "Твоё действие открыто" : done2 ? "Фундамент подтверждён" : done ? "Твоё поле открыто" : "Ничего ещё не пройдено"}
       </h2>
       <p style={{ fontFamily: SANS, fontSize: 15, color: C.dim, margin: "0 0 24px" }}>
-        {done6
-          ? "Все шесть глав пройдены."
+        {done7
+          ? "Все семь глав пройдены. MVP-профиль полностью собран."
+          : done6
+          ? "Шесть глав из семи пройдены. Осталась одна."
           : done5
-          ? "Пять глав из шести пройдены. Осталась одна."
+          ? "Пять глав из семи пройдены. Остальное пока закрыто."
           : done4
-          ? "Четыре главы из шести пройдены. Остальное пока закрыто."
+          ? "Четыре главы из семи пройдены. Остальное пока закрыто."
           : done3
-          ? "Три главы из шести пройдены. Остальное пока закрыто."
+          ? "Три главы из семи пройдены. Остальное пока закрыто."
           : done2
-          ? "Две главы из шести пройдены. Остальное пока закрыто."
+          ? "Две главы из семи пройдены. Остальное пока закрыто."
           : done
-          ? "Одна глава из шести пройдена. Остальное пока закрыто."
+          ? "Одна глава из семи пройдена. Остальное пока закрыто."
           : "Начни с главы 1 — три минуты, без вопросов про профессии."}
       </p>
 
@@ -2750,12 +2975,14 @@ function Map({ res, res2, res3, res4, res5, res6, done, done2, done3, done4, don
                 else if (ch.state === "next" && i === 3) onStart4 && onStart4();
                 else if (ch.state === "next" && i === 4) onStart5 && onStart5();
                 else if (ch.state === "next" && i === 5) onStart6 && onStart6();
+                else if (ch.state === "next" && i === 6) onStart7 && onStart7();
                 else if (ch.state === "done" && i === 0) onOpenResult();
                 else if (ch.state === "done" && i === 1) onOpenResult2 && onOpenResult2();
                 else if (ch.state === "done" && i === 2) onOpenResult3 && onOpenResult3();
                 else if (ch.state === "done" && i === 3) onOpenResult4 && onOpenResult4();
                 else if (ch.state === "done" && i === 4) onOpenResult5 && onOpenResult5();
                 else if (ch.state === "done" && i === 5) onOpenResult6 && onOpenResult6();
+                else if (ch.state === "done" && i === 6) onOpenResult7 && onOpenResult7();
               }}
               style={{
                 background: ch.state === "next" ? C.surfaceUp : C.surface,
@@ -3286,7 +3513,7 @@ function ProgressRing({ percent }: any) {
   );
 }
 
-function Profile({ state, res, res3, res4, res5, res6, combined, focus, onOpenFocus, onOpenResult, onOpenResult2, onOpenResult3, onOpenResult4, onOpenResult5, onOpenResult6, onEdit, onReset, onSignOut, done: doneProp, done2, done3, done4, done5, done6, user }: any) {
+function Profile({ state, res, res3, res4, res5, res6, res7, finalProfile, combined, focus, onOpenFocus, onOpenResult, onOpenResult2, onOpenResult3, onOpenResult4, onOpenResult5, onOpenResult6, onOpenResult7, onEdit, onReset, onSignOut, done: doneProp, done2, done3, done4, done5, done6, done7, user }: any) {
   const p = state.profile;
   const done = doneProp ?? !!state.ch1;
   const lead = combined && (done || done2) ? POLES[combined.lead] : null;
@@ -3314,28 +3541,34 @@ function Profile({ state, res, res3, res4, res5, res6, combined, focus, onOpenFo
   const dateLabel6 = date6
     ? date6.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
     : "";
+  const date7 = state.ch7?.date ? new Date(state.ch7.date) : null;
+  const dateLabel7 = date7
+    ? date7.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })
+    : "";
 
   return (
     <div className="scene" style={{ paddingTop: 36 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 26 }}>
-        <ProgressRing percent={done6 ? 86 : done5 ? 71 : done4 ? 36 : done3 ? 27 : done2 ? 17 : done ? 8 : 0} />
+        <ProgressRing percent={done7 ? 100 : done6 ? 86 : done5 ? 71 : done4 ? 36 : done3 ? 27 : done2 ? 17 : done ? 8 : 0} />
         <div style={{ minWidth: 0 }}>
           <h2 style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.15, fontWeight: 700, margin: 0, color: C.text }}>
             {p?.name ? p.name : user?.email ? user.email.split("@")[0] : "Твой профиль"}
           </h2>
           <p style={{ fontFamily: SANS, fontSize: 14, color: C.dim, margin: "6px 0 0" }}>
-            {done6
-              ? "Изучен на 86%. Все шесть глав."
+            {done7
+              ? "Изучен на 100%. Все семь глав MVP."
+              : done6
+              ? "Изучен на 86%. Шесть глав из семи."
               : done5
-              ? "Изучен на 71%. Пять глав из шести."
+              ? "Изучен на 71%. Пять глав из семи."
               : done4
-              ? "Изучен на 36%. Четыре главы из шести."
+              ? "Изучен на 36%. Четыре главы из семи."
               : done3
-              ? "Изучен на 27%. Три главы из шести."
+              ? "Изучен на 27%. Три главы из семи."
               : done2
-              ? "Изучен на 17%. Две главы из шести."
+              ? "Изучен на 17%. Две главы из семи."
               : done
-              ? "Изучен на 8%. Одна глава из шести."
+              ? "Изучен на 8%. Одна глава из семи."
               : "Пока пусто. Первая глава всё начнёт."}
           </p>
         </div>
@@ -3520,6 +3753,27 @@ function Profile({ state, res, res3, res4, res5, res6, combined, focus, onOpenFo
             </button>
           )}
 
+          {done7 && res7 && finalProfile && (
+            <button
+              className="tap"
+              onClick={onOpenResult7}
+              style={{
+                width: "100%", textAlign: "left" as const, background: C.bgCard,
+                boxShadow: C.shadow, border: `1px solid ${C.line}`,
+                borderLeft: `3px solid ${C.accent}`,
+                borderRadius: 16, padding: 20, cursor: "pointer", color: C.text, marginTop: 12,
+              }}
+            >
+              <Eyebrow>Твой профиль · собран на 100%</Eyebrow>
+              <div style={{ fontFamily: SERIF, fontSize: 21, lineHeight: 1.25, margin: "10px 0 10px" }}>
+                {finalProfile.roles[0]?.name || "Итоговая сборка"}
+              </div>
+              <div style={{ fontFamily: SANS, fontSize: 13.5, color: C.faint }}>
+                {finalProfile.roles.length} рекомендованных направления →
+              </div>
+            </button>
+          )}
+
           <div style={{ marginTop: 26 }}>
             <Eyebrow>Хроника</Eyebrow>
             <div style={{ marginTop: 14, borderLeft: `1px solid ${C.line}`, paddingLeft: 18 }}>
@@ -3632,6 +3886,20 @@ function Profile({ state, res, res3, res4, res5, res6, combined, focus, onOpenFo
                     Шестой замер: антипрофиль — {res6.exclusions.length} среды исключены
                   </div>
                 </div>
+              ) : null}
+              {done7 && res7 && finalProfile ? (
+                <div style={{ position: "relative", paddingBottom: 20 }}>
+                  <span style={{
+                    position: "absolute", left: -23, top: 5, width: 9, height: 9,
+                    borderRadius: 5, background: C.accent,
+                  }} />
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: C.faint, letterSpacing: "0.1em" }}>
+                    {dateLabel7}
+                  </div>
+                  <div style={{ fontFamily: SANS, fontSize: 15, marginTop: 5, lineHeight: 1.5 }}>
+                    Седьмой замер: итоговый профиль — {finalProfile.roles.length} направления
+                  </div>
+                </div>
               ) : (
                 <div style={{ position: "relative", opacity: 0.45 }}>
                   <span
@@ -3646,7 +3914,7 @@ function Profile({ state, res, res3, res4, res5, res6, combined, focus, onOpenFo
                     }}
                   />
                   <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.5 }}>
-                    Следующая отметка появится после {done5 ? "главы 6" : done4 ? "главы 5" : done3 ? "главы 4" : done2 ? "главы 3" : "главы 2"}
+                    Следующая отметка появится после {done6 ? "главы 7" : done5 ? "главы 6" : done4 ? "главы 5" : done3 ? "главы 4" : done2 ? "главы 3" : "главы 2"}
                   </div>
                 </div>
               )}
@@ -3860,6 +4128,8 @@ export default function Home() {
   const [answers5, setAnswers5] = useState<Record<string, unknown>>({});
   const [index6, setIndex6] = useState(0);
   const [answers6, setAnswers6] = useState<Record<string, unknown>>({});
+  const [index7, setIndex7] = useState(0);
+  const [answers7, setAnswers7] = useState<Record<string, unknown>>({});
   const [focusFrom, setFocusFrom] = useState("tabs");
   const [fromProfile, setFromProfile] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
@@ -3870,6 +4140,7 @@ export default function Home() {
   const startedAt4Ref = useRef<number>(Date.now());
   const startedAt5Ref = useRef<number>(Date.now());
   const startedAt6Ref = useRef<number>(Date.now());
+  const startedAt7Ref = useRef<number>(Date.now());
   const bootedRef = useRef(false);
   const recordedRef = useRef(false);
   const recorded2Ref = useRef(false);
@@ -3877,6 +4148,7 @@ export default function Home() {
   const recorded4Ref = useRef(false);
   const recorded5Ref = useRef(false);
   const recorded6Ref = useRef(false);
+  const recorded7Ref = useRef(false);
   const savingRef = useRef(false);
 
   /* --- восстановление черновика при первом рендере ---------------- */
@@ -3912,6 +4184,11 @@ export default function Home() {
     if (draft6) {
       setAnswers6(draft6.answers);
       startedAt6Ref.current = draft6.startedAt || Date.now();
+    }
+    const draft7 = readDraft("ch7");
+    if (draft7) {
+      setAnswers7(draft7.answers);
+      startedAt7Ref.current = draft7.startedAt || Date.now();
     }
   }, []);
 
@@ -3951,6 +4228,12 @@ export default function Home() {
       saveDraft("ch6", answers6, startedAt6Ref.current);
     }
   }, [answers6]);
+
+  useEffect(() => {
+    if (Object.keys(answers7).length > 0) {
+      saveDraft("ch7", answers7, startedAt7Ref.current);
+    }
+  }, [answers7]);
 
   const res = useMemo(() => computeResult(answers), [answers]);
   const res2 = useMemo(() => computeResult2(answers2), [answers2]);
@@ -4002,6 +4285,38 @@ export default function Home() {
     [answers6, questions6Full]
   );
 
+  // цель антисценария главы 7: субшкала с флагом противоречия из главы 6,
+  // иначе — самая сильная субшкала антипрофиля
+  const antiTargetSub = useMemo(
+    () => (res6.contradiction ? res6.contradiction.sub : res6.exclusions[0]),
+    [res6]
+  );
+
+  // глава 7 = базовые + подставной вопрос-перепроверка антипрофиля + финальный свободный
+  const questions7Full = useMemo(
+    () => [...QUESTIONS7_MAIN, antiScenarioQuestion(antiTargetSub), FINAL_Q7],
+    [antiTargetSub]
+  );
+
+  const res7 = useMemo(
+    () =>
+      computeResult7(answers7, {
+        verbLead: res3ForBank.lead,
+        verbFlat: res3ForBank.flat,
+        driverLead: res5.flat ? null : res5.lead,
+        driverFlat: res5.flat,
+        thinkType: res4.thinkType,
+        focusType: res4.focusType,
+        antiTargetSub,
+      }),
+    [answers7, res3ForBank, res5.lead, res5.flat, res4.thinkType, res4.focusType, antiTargetSub]
+  );
+
+  const complete7 = useMemo(
+    () => questions7Full.every((qq: any) => isComplete7(qq, answers7[qq.id])),
+    [answers7, questions7Full]
+  );
+
   // резонанс: сравниваем ведущий полюс главы 1 (из зафиксированных
   // measurements, а не из текущей формулы) с процентом главы 2
   const chapter1Frozen = useMemo(() => {
@@ -4024,6 +4339,22 @@ export default function Home() {
     }
     return res;
   }, [state.measurements, res]);
+
+  // итоговый профиль главы 7: собирается один раз, когда есть все ответы
+  const finalProfile = useMemo(() => {
+    if (!complete7) return null;
+    return buildFinalProfile({
+      materialLead: combined.lead,
+      pctByPole: combined.pct,
+      verbLead: res3ForBank.lead,
+      verbFlat: res3ForBank.flat,
+      driverLead: res5.flat ? null : res5.lead,
+      driverFlat: res5.flat,
+      quadrantTitle: QUADRANTS[res4.quadrant]?.title,
+      antiExclusions: res6.exclusions,
+      res7,
+    });
+  }, [complete7, combined, res3ForBank, res5.lead, res5.flat, res4.quadrant, res6.exclusions, res7]);
 
   /* --- вернулись после входа: досохраняем незаписанное (глава 1) --- */
   useEffect(() => {
@@ -4090,16 +4421,23 @@ export default function Home() {
     }
   }, [ready, user, state.ch6, complete6]);
 
+  /* --- есть сохранённая глава 7: подтягиваем ----------------------- */
   useEffect(() => {
-    if (ready && user && (state.ch1 || state.ch2 || state.ch3 || state.ch4 || state.ch5 || state.ch6) && screen === "welcome") {
+    if (ready && user && state.ch7 && !complete7) {
+      setAnswers7(state.ch7.answers as Record<string, unknown>);
+    }
+  }, [ready, user, state.ch7, complete7]);
+
+  useEffect(() => {
+    if (ready && user && (state.ch1 || state.ch2 || state.ch3 || state.ch4 || state.ch5 || state.ch6 || state.ch7) && screen === "welcome") {
       setScreen("tabs");
       setTab("me");
     }
-  }, [ready, user, state.ch1, state.ch2, state.ch3, state.ch4, state.ch5, state.ch6]);
+  }, [ready, user, state.ch1, state.ch2, state.ch3, state.ch4, state.ch5, state.ch6, state.ch7]);
 
   useEffect(() => {
     if (topRef.current) topRef.current.scrollIntoView({ block: "start" });
-  }, [screen, index, index2, index3, index4, index5, index6, tab]);
+  }, [screen, index, index2, index3, index4, index5, index6, index7, tab]);
 
   const q = QUESTIONS[index];
   const q2 = QUESTIONS2[index2];
@@ -4107,6 +4445,7 @@ export default function Home() {
   const q4 = QUESTIONS4[index4];
   const q5 = questions5Full[index5];
   const q6 = questions6Full[index6];
+  const q7 = questions7Full[index7];
 
   /* --- завершение главы 1 ------------------------------------------ */
   const finish = useCallback(async () => {
@@ -4316,6 +4655,44 @@ export default function Home() {
     setScreen("result6");
   }, [answers6, res6, saveChapter, recordCompletion, user]);
 
+  /* --- завершение главы 7 (финал MVP) ------------------------------- */
+  const finish7 = useCallback(async () => {
+    const secs = Math.max(1, Math.round((Date.now() - startedAt7Ref.current) / 1000));
+
+    if (!recorded7Ref.current) {
+      recorded7Ref.current = true;
+      recordCompletion({
+        chapter: "ch7",
+        leadPole: res7.combinedVerb || null,
+        scores: CONSTRAINTS.reduce((acc: any, k: string) => {
+          acc[k] = Math.round(res7.constraints[k].score * 10) / 10;
+          return acc;
+        }, {}),
+        isFlat: false,
+        hasGap: res7.verbMatch === false || res7.driverMatch === false,
+        secondsSpent: secs,
+        savedAccount: !!user,
+      });
+    }
+
+    if (user) {
+      const measurements = [
+        ...CONSTRAINTS.map((k: string) => ({
+          pole: k, kind: "normative" as string, value: res7.constraints[k].score, weight: 1,
+        })),
+        ...(res7.scenarioVerb
+          ? [{ pole: res7.scenarioVerb, kind: "behavioral_scenario" as string, value: 100, weight: 1.4 }]
+          : []),
+        ...(res7.scenarioDriver
+          ? [{ pole: res7.scenarioDriver, kind: "behavioral_scenario" as string, value: 100, weight: 1.2 }]
+          : []),
+      ];
+      await saveChapter("ch7", answers7, measurements);
+      clearDraft("ch7");
+    }
+    setScreen("result7");
+  }, [answers7, res7, saveChapter, recordCompletion, user]);
+
   const next = () => {
     if (index === QUESTIONS.length - 1) finish();
     else setIndex((i) => i + 1);
@@ -4376,6 +4753,16 @@ export default function Home() {
     else setIndex6((i) => i - 1);
   };
 
+  const next7 = () => {
+    if (index7 === questions7Full.length - 1) finish7();
+    else setIndex7((i) => i + 1);
+  };
+
+  const back7 = () => {
+    if (index7 === 0) setScreen("tabs");
+    else setIndex7((i) => i - 1);
+  };
+
   const restart = () => {
     clearDraft("ch1");
     recordedRef.current = false;
@@ -4430,6 +4817,15 @@ export default function Home() {
     setScreen("intro6");
   };
 
+  const restart7 = () => {
+    clearDraft("ch7");
+    recorded7Ref.current = false;
+    startedAt7Ref.current = Date.now();
+    setAnswers7({});
+    setIndex7(0);
+    setScreen("intro7");
+  };
+
   const handleSignOut = useCallback(async () => {
     clearDraft("ch1");
     clearDraft("ch2");
@@ -4437,12 +4833,14 @@ export default function Home() {
     clearDraft("ch4");
     clearDraft("ch5");
     clearDraft("ch6");
+    clearDraft("ch7");
     recordedRef.current = false;
     recorded2Ref.current = false;
     recorded3Ref.current = false;
     recorded4Ref.current = false;
     recorded5Ref.current = false;
     recorded6Ref.current = false;
+    recorded7Ref.current = false;
     savingRef.current = false;
     startedAtRef.current = Date.now();
     startedAt2Ref.current = Date.now();
@@ -4450,6 +4848,7 @@ export default function Home() {
     startedAt4Ref.current = Date.now();
     startedAt5Ref.current = Date.now();
     startedAt6Ref.current = Date.now();
+    startedAt7Ref.current = Date.now();
     await signOut();
     setAnswers({});
     setAnswers2({});
@@ -4457,12 +4856,14 @@ export default function Home() {
     setAnswers4({});
     setAnswers5({});
     setAnswers6({});
+    setAnswers7({});
     setIndex(0);
     setIndex2(0);
     setIndex3(0);
     setIndex4(0);
     setIndex5(0);
     setIndex6(0);
+    setIndex7(0);
     setTab("chapters");
     setFromProfile(false);
     setScreen("welcome");
@@ -4489,15 +4890,18 @@ export default function Home() {
   const hasCh4 = !!state.ch4 || complete4;
   const hasCh5 = !!state.ch5 || complete5;
   const hasCh6 = !!state.ch6 || complete6;
+  const hasCh7 = !!state.ch7 || complete7;
 
-  const focusNow = focusCount(hasCh1, hasCh2, hasCh3, hasCh4, hasCh5, hasCh6, hasCh1 ? res : null);
-  const focusNames = narrowDirections({
-    pctByPole: hasCh1 ? (combined ? combined.pct : res.pct) : null,
-    verbRanked: hasCh3 && !res3.flat ? res3.ranked : null,
-    antiHigh: hasCh6 ? res6.exclusions : null,
-    limit: focusNow,
-  });
-  const focusHistory = narrowingHistory(hasCh1, hasCh2, hasCh3, hasCh4, hasCh5, hasCh6, hasCh1 ? res : null);
+  const focusNow = focusCount(hasCh1, hasCh2, hasCh3, hasCh4, hasCh5, hasCh6, hasCh1 ? res : null, hasCh7, finalProfile ? finalProfile.roles.length : null);
+  const focusNames = hasCh7 && finalProfile
+    ? finalProfile.roles.map((r: any) => r.name)
+    : narrowDirections({
+        pctByPole: hasCh1 ? (combined ? combined.pct : res.pct) : null,
+        verbRanked: hasCh3 && !res3.flat ? res3.ranked : null,
+        antiHigh: hasCh6 ? res6.exclusions : null,
+        limit: focusNow,
+      });
+  const focusHistory = narrowingHistory(hasCh1, hasCh2, hasCh3, hasCh4, hasCh5, hasCh6, hasCh1 ? res : null, hasCh7, finalProfile ? finalProfile.roles.length : null);
 
   const mood =
     screen === "q"
@@ -4512,6 +4916,8 @@ export default function Home() {
       ? DRIVER_META[DRIVERS[index5 % DRIVERS.length]].color
       : screen === "q6"
       ? SUB_META[SUBSCALES[index6 % SUBSCALES.length]].color
+      : screen === "q7"
+      ? C.accent
       : (screen === "result" || screen === "tabs") && res && !res.flat && complete
       ? POLES[res.lead].color
       : C.accent;
@@ -4609,6 +5015,20 @@ export default function Home() {
         />
       )}
 
+      {screen === "intro7" && (
+        <IntroChapter
+          eyebrow="Глава седьмая · последняя"
+          titleTop="Последняя"
+          titleBottom="проверка"
+          lead="Осталась одна глава. Она не ищет в тебе ничего нового — она проверяет, выдержит ли всё собранное живой выбор, а не анкету."
+          sub="Один большой поведенческий сценарий сталкивает всё, что мы уже узнали, разом — и после него мы соберём твой итоговый профиль с 1–3 направлениями."
+          footer="10 вопросов · 3–3,5 минуты · открывает «твой профиль»"
+          onStart={() => { setIndex7(0); setScreen("q7"); }}
+          user={user}
+          onProfile={() => { setScreen("tabs"); setTab("me"); }}
+        />
+      )}
+
       {screen === "focus" && (
         <FocusScreen
           count={focusNow}
@@ -4669,6 +5089,15 @@ export default function Home() {
           q={q6} index={index6} total={questions6Full.length} answer={answers6[q6.id]}
           onAnswer={(v: unknown) => setAnswers6((a) => ({ ...a, [q6.id]: v }))}
           onBack={back6} onNext={next6}
+        />
+      )}
+
+      {screen === "q7" && (
+        <QuestionScreen
+          key={q7.id}
+          q={q7} index={index7} total={questions7Full.length} answer={answers7[q7.id]}
+          onAnswer={(v: unknown) => setAnswers7((a) => ({ ...a, [q7.id]: v }))}
+          onBack={back7} onNext={next7}
         />
       )}
 
@@ -4736,6 +5165,15 @@ export default function Home() {
         />
       )}
 
+      {screen === "result7" && finalProfile && (
+        <Result7
+          res7={res7}
+          finalProfile={finalProfile}
+          onNext={() => { setFromProfile(false); setScreen("tabs"); setTab("me"); }}
+          onRestart={restart7}
+        />
+      )}
+
       {screen === "auth" && (
         <div style={{ paddingTop: 20 }}>
           <button
@@ -4778,12 +5216,14 @@ export default function Home() {
               res4={hasCh4 ? res4 : null}
               res5={hasCh5 ? res5 : null}
               res6={hasCh6 ? res6 : null}
+              res7={hasCh7 ? res7 : null}
               done={hasCh1}
               done2={hasCh2}
               done3={hasCh3}
               done4={hasCh4}
               done5={hasCh5}
               done6={hasCh6}
+              done7={hasCh7}
               focus={focusNow}
               onOpenFocus={() => { setFocusFrom("tabs"); setScreen("focus"); }}
               onOpenResult={() => { setFromProfile(true); setScreen("result"); }}
@@ -4792,6 +5232,7 @@ export default function Home() {
               onOpenResult4={() => { setFromProfile(true); setScreen("result4"); }}
               onOpenResult5={() => { setFromProfile(true); setScreen("result5"); }}
               onOpenResult6={() => { setFromProfile(true); setScreen("result6"); }}
+              onOpenResult7={() => { setFromProfile(true); setScreen("result7"); }}
               onStart={() => {
                 clearDraft("ch1");
                 recordedRef.current = false;
@@ -4828,18 +5269,26 @@ export default function Home() {
                 startedAt6Ref.current = Date.now();
                 setAnswers6({}); setIndex6(0); setScreen("intro6");
               }}
+              onStart7={() => {
+                clearDraft("ch7");
+                recorded7Ref.current = false;
+                startedAt7Ref.current = Date.now();
+                setAnswers7({}); setIndex7(0); setScreen("intro7");
+              }}
             />
           )}
           {tab === "me" && (
             <Profile
               state={state} res={res} res3={hasCh3 ? res3 : null} res4={hasCh4 ? res4 : null}
-              res5={hasCh5 ? res5 : null} res6={hasCh6 ? res6 : null} combined={combined}
+              res5={hasCh5 ? res5 : null} res6={hasCh6 ? res6 : null} res7={hasCh7 ? res7 : null}
+              finalProfile={hasCh7 ? finalProfile : null} combined={combined}
               done={hasCh1}
               done2={hasCh2}
               done3={hasCh3}
               done4={hasCh4}
               done5={hasCh5}
               done6={hasCh6}
+              done7={hasCh7}
               focus={focusNow}
               onOpenFocus={() => { setFocusFrom("tabs"); setScreen("focus"); }}
               user={user}
@@ -4849,6 +5298,7 @@ export default function Home() {
               onOpenResult4={() => { setFromProfile(true); setScreen("result4"); }}
               onOpenResult5={() => { setFromProfile(true); setScreen("result5"); }}
               onOpenResult6={() => { setFromProfile(true); setScreen("result6"); }}
+              onOpenResult7={() => { setFromProfile(true); setScreen("result7"); }}
               onEdit={() => setScreen("save")}
               onReset={restart}
               onSignOut={handleSignOut}
